@@ -6,8 +6,8 @@ from mpl_toolkits.mplot3d import Axes3D
 def cortar_ponderacion(ponderacion_variables,umbral):
     return [1 if pond>=umbral else 0 for pond in ponderacion_variables]
 
-def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_clusters=26,parallel_evaluation=False, directory=None,dummies=False, flatten=True):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
-    test=BuildTest(name,artificiales=artificiales, parallel_evaluation=parallel_evaluation,dummies=dummies)
+def analyse_dataset(name,fitness,linkage,max_num_considerado_clusters=26,parallel_evaluation=False, directory=None,flatten=True):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
+    test=BuildTest(name,parallel_evaluation=parallel_evaluation)
     num_vars_originales = test.nvars
     num_clusters = test.num_clusters
 
@@ -81,8 +81,8 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
         dicc_num_var_seleccionadas_num_clusters[sum(corte)]=clusters_para_maximo
         dicc_num_var_umbral[sum(corte)]=umbral
 
-        dicc_num_var_seleccionadas_ami_asociado[sum(corte)]=evaluate_ind(test.data_dummies,[clusters_para_maximo]+corte,'ami','hierarchical',linkage)[0]
-        dicc_num_var_seleccionadas_nmi_asociado[sum(corte)]=evaluate_ind(test.data_dummies,[clusters_para_maximo]+corte,'nmi','hierarchical',linkage)[0]
+        dicc_num_var_seleccionadas_ami_asociado[sum(corte)]=evaluate_ind(test.data,[clusters_para_maximo]+corte,'ami','hierarchical',linkage)[0]
+        dicc_num_var_seleccionadas_nmi_asociado[sum(corte)]=evaluate_ind(test.data,[clusters_para_maximo]+corte,'nmi','hierarchical',linkage)[0]
 
 
 
@@ -110,7 +110,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     for i in x_aux:
         for j in y_aux:
             crom = [j] + list(dicc_numvars_cortes[i]) #hago list porque es una tupla
-            k = evaluate_ind(test.data_dummies,crom,fitness,'hierarchical',linkage)[0]
+            k = evaluate_ind(test.data,crom,fitness,'hierarchical',linkage)[0]
             x.append(i)
             y.append(j)
             z.append(k)
@@ -186,7 +186,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     ax[1, 0].scatter(x2,y2)
     ax[1, 0].set_xlabel('Variables significativas')
     ax[1, 0].set_ylabel(f'fitness {fitness}')
-    int_orig = evaluate_ind(test.data_dummies,[num_clusters]+[1]*num_vars_originales,fitness,'hierarchical',linkage)[0]
+    int_orig = evaluate_ind(test.data,[num_clusters]+[1]*num_vars_originales,fitness,'hierarchical',linkage)[0]
     ax[1,0].axhline(y=int_orig, color='green', linestyle='--', label=f'{fitness}_original')
     ax[1,0].legend()
     ax[1, 0].set_xticks(range(min(x2), max(x2) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
@@ -200,7 +200,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     ax[0, 1].scatter(x3,y3)
     ax[0, 1].set_xlabel('Variables significativas')
     ax[0, 1].set_ylabel('fitness ami asociado')
-    ami_orig = evaluate_ind(test.data_dummies,[num_clusters]+[1]*num_vars_originales,'ami','hierarchical',linkage)[0]
+    ami_orig = evaluate_ind(test.data,[num_clusters]+[1]*num_vars_originales,'ami','hierarchical',linkage)[0]
     ax[0,1].axhline(y=ami_orig, color='green', linestyle='--', label='ami_original')
     ax[0,1].legend()
     ax[0, 1].set_xticks(range(min(x3), max(x3) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
@@ -230,7 +230,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     ax[2,0].scatter(x5,y5)
     ax[2,0].set_xlabel('Variables significativas')
     ax[2,0].set_ylabel('fitness NMI asociado')
-    nmi_orig = evaluate_ind(test.data_dummies,[num_clusters]+[1]*num_vars_originales,'nmi','hierarchical',linkage)[0]
+    nmi_orig = evaluate_ind(test.data,[num_clusters]+[1]*num_vars_originales,'nmi','hierarchical',linkage)[0]
     ax[2,0].axhline(y=nmi_orig, color='green', linestyle='--', label='nmi_original')
     ax[2,0].legend()
     ax[2,0].set_xticks(range(min(x5), max(x5) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X

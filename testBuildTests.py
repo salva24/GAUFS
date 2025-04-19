@@ -18,8 +18,7 @@ def main():
         
         name_file = file.removesuffix(".csv")
         print(F'Ejecutando el archivo {name_file}')
-        dummies=False
-        test = BuildTest(name_file,artificiales = False, parallel_evaluation=True, dummies=dummies)
+        test = BuildTest(name_file,parallel_evaluation=True)
         
         #comentar estas dos lineas para solo sacar graficas
         # test.run()
@@ -29,7 +28,7 @@ def main():
         linkages=["ward"]
         for fitness in fitness_internos:
             for linkage in linkages:
-                analyse_dataset(name_file,max_num_considerado_clusters=test.rango_banda_clusters[0][1],artificiales=False,fitness=fitness,linkage=linkage, parallel_evaluation=True, dummies=dummies)
+                analyse_dataset(name_file,max_num_considerado_clusters=test.rango_banda_clusters[0][1],fitness=fitness,linkage=linkage, parallel_evaluation=True)
         
 
 if __name__ == "__main__":

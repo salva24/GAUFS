@@ -22,7 +22,7 @@ import matplotlib
 # Cada fila un experimento correspondiente a 3 ejecuciones del genetico con 3 semillas distintas
 
 class BuildTest:
-     def __init__(self,name_data, artificiales=False, parallel_evaluation=False,dummies=False):
+     def __init__(self,name_data,parallel_evaluation=False):
           #name_data : nombre_dataset SIN SUFIJO .CSV (debe estar en la carpeta datasets)
           #artificiales = True si los datos estan en datasets/artificiales_navidad, False cc
           #dummies = True si se le quieren añadir dummies 
@@ -38,8 +38,7 @@ class BuildTest:
 
           self.name_data = name_data
           self.name_csv = f'{name_data}.csv'
-          
-          self.path_data = f'./datasets/{self.name_csv}' if not artificiales else f'./datasets/artificiales_navidad/{self.name_csv}' #path del csv original
+          self.path_data = f'./datasets/{self.name_csv}' #path del csv original 
           self.path_result_folder = f'./results/results_{name_data}' if not parallel_evaluation else f'./results/results_parallel_{name_data}'
           self.path_result_csv= f'{self.path_result_folder}/results_{self.name_csv}'
 
@@ -47,17 +46,10 @@ class BuildTest:
 
           self.data =  pd.read_csv(self.path_data)
           self.nvars = len(self.data.columns) - 1 #numero de variables ORIGINALES del dataset 
-          
-          #Ahora mismo trabajamos con semilla fijada para las dummies, en un futuro podemos cambiarlo
-          self.data_dummies = self.data.copy() if not dummies else add_dummies(self.data,max(5,self.nvars//2),max(5,self.nvars//2),2,2) #Mitad dummies Uniformes, mitad Betas (2,2) (como una campana)
-
-
-          
-          self.nvars_dummies = len(self.data_dummies.columns) #numero de variables totales al añadirle dummies 
 
           
           self.num_clusters = self.data['ETIQ'].nunique() #numero clusters
-          self.dataframe = None#sera el resultado
+          self.dataframe = None #sera el resultado
 
 
           #PARAMETROS PRUEBAS en el run si no se especifica ninguna configuración se haran pruebas con todas estas combinaciones
@@ -67,8 +59,8 @@ class BuildTest:
                 2) Mas de 100 variables : 7000 ind, 300 gen  
           """
 
-          self.rangeNgen = [150] if self.nvars_dummies <= 100 else [300]  
-          self.rangeNpop = [1500] if self.nvars_dummies <= 100 else [7000]
+          self.rangeNgen = [150] if self.nvars <= 100 else [300]  
+          self.rangeNpop = [1500] if self.nvars <= 100 else [7000]
 
 
           self.rangeMetodo_clust = ['Hierarchical']
@@ -156,10 +148,10 @@ class BuildTest:
           #para primera semilla
           # print(configuration) #Debug
           if self.parallel_evaluation:
-               exp = GeneticSearchParallel(self.data_dummies, configuration['seeds'][0], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
+               exp = GeneticSearchParallel(self.data, configuration['seeds'][0], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
                               eleccion_fitness=configuration['fitness'], linkage_hierarchical=configuration['linkage'],num_var_control=configuration['num_var_control'],radio_rango_de_busqueda=configuration["radio_banda_busqueda_num_clusters"],banda_busqueda_clusters=configuration['banda_busqueda_num_clusters']) #cuidado aqui con que los demas parametros no esten a None por defecto
           else:
-               exp = GeneticSearch(self.data_dummies, configuration['seeds'][0], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
+               exp = GeneticSearch(self.data, configuration['seeds'][0], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
                               eleccion_fitness=configuration['fitness'], linkage_hierarchical=configuration['linkage'],num_var_control=configuration['num_var_control'],radio_rango_de_busqueda=configuration["radio_banda_busqueda_num_clusters"],banda_busqueda_clusters=configuration['banda_busqueda_num_clusters']) #cuidado aqui con que los demas parametros no esten a None por defecto
           hof, hof_counter,dicc_num_cluster_max_fit,ultima_generacion=exp.run()
           lista_ultima_gneracion_ejecucion.append(ultima_generacion)
@@ -170,16 +162,16 @@ class BuildTest:
           # cortes_hof_chromosomes.append(corte_hof)
           best_chromosomes.append(hof[0])
           for fit in configuration['all_fitness_asociated']:#calculamos todos los fitness del mejor cromosoma
-               average_fitness[fit]=average_fitness[fit]+evaluate_ind(self.data_dummies, hof[0], fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'])[0]
-               # average_fitness_corte[fit]=average_fitness_corte[fit]+evaluate_ind(self.data_dummies, corte_hof, fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'],n_clusters = configuration['cluster_number'])[0]
+               average_fitness[fit]=average_fitness[fit]+evaluate_ind(self.data, hof[0], fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'])[0]
+               # average_fitness_corte[fit]=average_fitness_corte[fit]+evaluate_ind(self.data, corte_hof, fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'],n_clusters = configuration['cluster_number'])[0]
           
           acumula_ponderados=exp.get_hof_ponderado()
           for i in range(1,num_rep_experi):#para el resto de semillas
                if self.parallel_evaluation:   
-                    exp = GeneticSearchParallel(self.data_dummies, configuration['seeds'][i], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
+                    exp = GeneticSearchParallel(self.data, configuration['seeds'][i], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
                          eleccion_fitness=configuration['fitness'], linkage_hierarchical=configuration['linkage'],num_var_control=configuration['num_var_control'],radio_rango_de_busqueda=configuration["radio_banda_busqueda_num_clusters"],banda_busqueda_clusters=configuration['banda_busqueda_num_clusters'])
                else:     
-                    exp = GeneticSearch(self.data_dummies, configuration['seeds'][i], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
+                    exp = GeneticSearch(self.data, configuration['seeds'][i], configuration['ngen'], configuration['npop'], hof_size=configuration['hof_size_parameters'],#alfa and beta for computing the hof_size
                          eleccion_fitness=configuration['fitness'], linkage_hierarchical=configuration['linkage'],num_var_control=configuration['num_var_control'],radio_rango_de_busqueda=configuration["radio_banda_busqueda_num_clusters"],banda_busqueda_clusters=configuration['banda_busqueda_num_clusters'])
                
                hof, hof_counter,dicc_num_cluster_max_fit,ultima_generacion=exp.run()
@@ -190,8 +182,8 @@ class BuildTest:
                # cortes_hof_chromosomes.append(corte_hof)
                best_chromosomes.append(hof[0])
                for fit in configuration['all_fitness_asociated']:#calculamos todos los fitness del mejor cromosoma del hof
-                   average_fitness[fit]=average_fitness[fit]+evaluate_ind(self.data_dummies, hof[0], fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'])[0]
-                    # average_fitness_corte[fit]=average_fitness_corte[fit]+evaluate_ind(self.data_dummies, corte_hof, fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'],n_clusters = configuration['cluster_number'])[0]
+                   average_fitness[fit]=average_fitness[fit]+evaluate_ind(self.data, hof[0], fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'])[0]
+                    # average_fitness_corte[fit]=average_fitness_corte[fit]+evaluate_ind(self.data, corte_hof, fit, metodo_clust=configuration['clustering_method'],linkage_hierarchical=configuration['linkage'],n_clusters = configuration['cluster_number'])[0]
                acumula_ponderados = [x+y for (x,y) in zip(acumula_ponderados,exp.get_hof_ponderado())] #Acumulo las ponderaciones
                
                               
@@ -261,218 +253,14 @@ class BuildTest:
 
           print("Archivo guardado en:", output_path)
 
-     #añadido un parametro navidad para la creacion de results_navidad
-     def plot_codos_por_fitness2(self):
-          
-          filepath = self.path_result_csv
-          
-          
-          df = pd.read_csv(filepath)
-          if 'TODOS_HOF_Y_CONTADORES_Y_DICCIONARIO_NUM_CLUSTERS_PARA_CADA_EJECUCION' not in df.columns:
-               return
-          # Renombrar columna para facilitar el acceso
-          df.rename(columns={'TODOS_HOF_Y_CONTADORES_Y_DICCIONARIO_NUM_CLUSTERS_PARA_CADA_EJECUCION': 'counters'}, inplace=True)
-          
-          ejecuciones = df['counters'].tolist()
-          total_plots = len(ejecuciones)
-
-          # Reordenar las ejecuciones por resto y cociente
-          ejecuciones = sorted(enumerate(ejecuciones), key=lambda x: (x[0] % (total_plots/2), x[0] // total_plots))
-
-          ejecuciones = [e[1] for e in ejecuciones]
-          
-          filas = (total_plots + 1) // 2  # Calcula las filas necesarias (2 plots por fila)
-          
-          fig, axes = plt.subplots(filas, 2, figsize=(15, 5 * filas))  # Crear grid de subplots
-          axes = axes.flatten()  # Aplanar el array de ejes para facilitar el acceso
-
-          for idx, ejecucion in enumerate(ejecuciones):
-               cleaned_str = re.sub(r'<[^>]+>', '0', ejecucion)
-               dict_list = ast.literal_eval(cleaned_str)
-
-               
-               n_iter = len(dict_list)
-               x = sorted(dict_list[0][2].keys())  # Asumiendo que todos los clusters posibles están en la primera ejecución
-
-               y = [0 for _ in range(n_iter)]
-               for i in range(n_iter):
-                    y[i] = [dict_list[i][2][j][0] for j in x]
-                    axes[idx].plot(x, y[i], label=f'iteracion {i}')
-
-               avg = [sum(valores) / len(valores) for valores in zip(*y)]
-               maxim = [np.max(valores) for valores in zip(*y)]
-
-               axes[idx].plot(x, avg, c='blue', label='mean')
-               axes[idx].plot(x, maxim, c='red', label='max')
-               axes[idx].legend()
-               axes[idx].grid()
-               
-               # Título con información del dataframe
-               metodo = df.loc[df['counters'] == ejecucion, 'METODO_CLUST'].values[0]
-               linkage = df.loc[df['counters'] == ejecucion, 'LINKAGE'].values[0]
-               fitness = df.loc[df['counters'] == ejecucion, 'USED_FITNESS'].values[0]
-               axes[idx].set_title(f'{metodo} con {linkage} y {fitness}')
-
-          # Eliminar subplots vacíos si hay una cantidad impar de ejecuciones
-          if total_plots % 2 != 0:
-               fig.delaxes(axes[-1])
-
-          plt.tight_layout()
-          filename = filepath.split('\\')[-1].replace('.csv', '')
-          # print(filename)
-          output_path = f'{filename}_codos.png'
-          plt.savefig(output_path,bbox_inches='tight')
-          print(f'Resultados guardados en {output_path}')
-          # plt.show()
-          plt.close()
-
-
-
-     #añadido parametro navidad para la creacion de results_navidad 
-     def plot_codos_new(self) : 
-          # nueva implementacion de los codos, pinntando todos los puntos de la ultima generacion 
-          filepath = self.path_result_csv
-
-          
-          df = pd.read_csv(filepath)
-          if 'ULTIMA_GNERACION_CADA_EJECUCION' not in df.columns:
-               print("ERROR NO ESTÁ LA COLUMNA")
-               return 
-          # Renombrar columna para facilitar el acceso
-          columna = df['ULTIMA_GNERACION_CADA_EJECUCION']
-          
-          df.rename(columns={'ULTIMA_GNERACION_CADA_EJECUCION': 'counters'}, inplace=True)
-
-          experimentos = columna.tolist()
-          total_plots = len(experimentos)
-          print(total_plots)
-
-          # Reordenar las ejecuciones por resto y cociente
-          experimentos = sorted(enumerate(experimentos), key=lambda x: (x[0] % (total_plots/2), x[0] // total_plots))
-
-          experimentos = [e[1] for e in experimentos]
-
-          filas = (total_plots + 1) // 2  # Calcula las filas necesarias (2 plots por fila)
-
-          fig, axes = plt.subplots(filas, 2, figsize=(15, 5 * filas))  # Crear grid de subplots
-          axes = axes.flatten()  # Aplanar el array de ejes para facilitar el acceso
-
-
-          dicc_color = {0:'red',1:'blue',2:'green'}
-          for idx, exp in enumerate(experimentos):
-               cleaned_str = re.sub(r'<[^>]+>', '0',exp)
-               dict_list = ast.literal_eval(cleaned_str)
-               for ejec in range(len(dict_list)):
-                    x = list(map(lambda x: x[0], dict_list[ejec].keys()))
-                    y = list(dict_list[ejec].values())
-
-                    lista_tuplas = [(i,j) for i,j in zip(x,y) if j> -100]
-                    x = [i for i,j in lista_tuplas]
-                    y = [j for i,j in lista_tuplas]
-
-
-                    #print(x,y)
-                    axes[idx].scatter(x, y, c=dicc_color[ejec], label=f'{ejec}')
-                    axes[idx].legend()
-                    axes[idx].grid()
-
-
-               # Título con información del dataframe
-               metodo = df.loc[df['counters'] == exp, 'METODO_CLUST'].values[0]
-               linkage = df.loc[df['counters'] == exp, 'LINKAGE'].values[0]
-               fitness = df.loc[df['counters'] == exp, 'USED_FITNESS'].values[0]
-               axes[idx].set_title(f'{metodo} con {linkage} y {fitness}')
-
-          # Eliminar subplots vacíos si hay una cantidad impar de ejecuciones
-          if total_plots % 2 != 0:
-               fig.delaxes(axes[-1])
-
-          plt.tight_layout()
-          filename = filepath.split('\\')[-1].replace('.csv', '')
-          # print(filename)
-          output_path = f'{filename}_codos_new.png'
-          plt.savefig(output_path,bbox_inches='tight')
-          print(f'Resultados guardados en {output_path}')
-          plt.show()
-          plt.close()
-       
 
 
 
 
-     def plot_codos_new_hof(self) : 
-          # nueva implementacion de los codos, pinntando todos los puntos de la ultima generacion 
-          filepath = self.path_result_csv
-
-          
-          df = pd.read_csv(filepath)
-          if 'ULTIMA_GNERACION_CADA_EJECUCION' not in df.columns:
-               print("ERROR NO ESTÁ LA COLUMNA")
-               return 
-          # Renombrar columna para facilitar el acceso
-          columna = df['ULTIMA_GNERACION_CADA_EJECUCION']
-          
-          df.rename(columns={'ULTIMA_GNERACION_CADA_EJECUCION': 'counters'}, inplace=True)
-
-          experimentos = columna.tolist()
-          total_plots = len(experimentos)
-          print(total_plots)
-
-          # Reordenar las ejecuciones por resto y cociente
-          experimentos = sorted(enumerate(experimentos), key=lambda x: (x[0] % (total_plots/2), x[0] // total_plots))
-
-          experimentos = [e[1] for e in experimentos]
-
-          filas = (total_plots + 1) // 2  # Calcula las filas necesarias (2 plots por fila)
-
-          fig, axes = plt.subplots(filas, 2, figsize=(15, 5 * filas))  # Crear grid de subplots
-          axes = axes.flatten()  # Aplanar el array de ejes para facilitar el acceso
 
 
-          dicc_color = {0:'red',1:'blue',2:'green'}
-          for idx, exp in enumerate(experimentos):
-               cleaned_str = re.sub(r'<[^>]+>', '0',exp)
-               dict_list = ast.literal_eval(cleaned_str)
-               for ejec in range(len(dict_list)):
-                    x = list(map(lambda x: x[0], dict_list[ejec].keys()))
-                    y = list(dict_list[ejec].values())
 
-                    lista_tuplas = [(i,j) for i,j in zip(x,y) if j> -100]
-     
-                    x = [i for i,j in lista_tuplas]
-                    y = [j for i,j in lista_tuplas]
-
-                    #tomo los numeros de clusters con representacion en la ultima generacion
-                    x = list(set(x))
-                    y = [max([j for i,j in lista_tuplas if i==k]) for k in x]
-                    
-                    #print(x,y)
-                    axes[idx].scatter(x, y, c=dicc_color[ejec], label=f'{ejec}')
-                    axes[idx].legend()
-                    axes[idx].grid()
-
-
-               # Título con información del dataframe
-               metodo = df.loc[df['counters'] == exp, 'METODO_CLUST'].values[0]
-               linkage = df.loc[df['counters'] == exp, 'LINKAGE'].values[0]
-               fitness = df.loc[df['counters'] == exp, 'USED_FITNESS'].values[0]
-               axes[idx].set_title(f'{metodo} con {linkage} y {fitness}')
-
-          # Eliminar subplots vacíos si hay una cantidad impar de ejecuciones
-          if total_plots % 2 != 0:
-               fig.delaxes(axes[-1])
-
-          plt.tight_layout()
-          filename = filepath.split('\\')[-1].replace('.csv', '')
-          # print(filename)
-          output_path = f'{filename}_codos_new_hof.png'
-          plt.savefig(output_path,bbox_inches='tight')
-          print(f'Resultados guardados en {output_path}')
-          plt.show()
-          plt.close()
-     
-
-
+     #MEJORA METER EN UTILS O ALGO ASI (pensarlo para la refactorizacion )
      def dicc_clusters_fit_max(self,fitness,linkage):
           "Entrada: fitness, linkage"
           "Salida : 3 diccionarios del tipo NUM_CLUSTER:(FIT_MAX,CROMOSOMA) ordenados por clave para la fila de fitness/linkage correspondiente"
@@ -518,7 +306,7 @@ class BuildTest:
 
           for i in range (2,max_num_considerado_clusters):
                crom_total = [i] + crom_vars
-               dicc_clusters_fit[i] = evaluate_ind(self.data_dummies,crom_total,fitness,'hierarchical',linkage)[0]
+               dicc_clusters_fit[i] = evaluate_ind(self.data,crom_total,fitness,'hierarchical',linkage)[0]
           x = list(dicc_clusters_fit.keys())
           y = list(dicc_clusters_fit.values())
           

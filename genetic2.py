@@ -1,18 +1,17 @@
 import numpy as np
 import pandas as pd
 import random
-from concurrent.futures import ProcessPoolExecutor
+from scoop import futures
 #from experiments import KmeansExperiment
 from alg_clustering import *
 from deap import base, tools, algorithms, creator
 import matplotlib.pyplot as plt
+import math
 from scipy.stats import beta
 from utils_genetic2 import *
 import pandas as pd
 import numpy as np
 from sklearn.datasets import make_blobs
-# import math
-# import time
 
 # Función para generar datos sintéticos con etiquetas
 def generar_datos_sinteticos(n_muestras=500, n_variables=10, n_clusters=4, seed=42):
@@ -41,11 +40,11 @@ def generar_datos_sinteticos(n_muestras=500, n_variables=10, n_clusters=4, seed=
 
 
 
-class GeneticSearchParallel:
+class GeneticSearch:
 
     def __init__(self, data,  seed=10,ngen=None,npop=None,cxpb=0.8,mutpb=0.1,tol=None,
-                 convergence_generations = 10, hof_size=(0.1, 0.2),nobj=1,eleccion_fitness= 'ami',metodo_clust='Hierarchical',linkage_hierarchical = 'average',
-                 num_var_control=0,banda_busqueda_clusters=None,radio_rango_de_busqueda=3,numero_mejores_cromososmas_ponderacion_var_sig=None, graficar_evolucion = False):
+                 convergence_generations = None, hof_size=(0.1, 0.2),nobj=1,eleccion_fitness= 'ami',metodo_clust='Hierarchical',linkage_hierarchical = 'average',
+                 num_var_control=0,banda_busqueda_clusters=None,radio_rango_de_busqueda=3,numero_mejores_cromososmas_ponderacion_var_sig=None):
         '''
         eleccion_fitness = 'ami','chi2','f-score',davies-bouldin','silhouette','sse','calinski_harabasz'
         metodo_clust = 'Hierarchical','Kmeans','DBSCAN'
@@ -95,7 +94,7 @@ class GeneticSearchParallel:
         # umbral minimo de mejora en el fitness - para buscar convergencia
         #self.tol = tol
         # numero de generaciones en las que buscar convergencia
-        self.convergence_generations = convergence_generations
+        #self.convergence_generations = convergence_generations
         # numero de ejecuciones del algoritmo
         #self.n_executions = n_executions
         #eleccion_fitness
@@ -109,8 +108,6 @@ class GeneticSearchParallel:
             banda_busqueda_clusters=(num_et - radio_rango_de_busqueda,
                                      num_et + radio_rango_de_busqueda+1)
         self.banda_busqueda_clusters=(max(2,banda_busqueda_clusters[0]),banda_busqueda_clusters[1])#el minimo es 2
-
-        self.graficar_evolucion = False
 
 
     ## Funciones para la codificacion de individuos en el genetico
@@ -163,15 +160,7 @@ class GeneticSearchParallel:
             i = random.choice(range(1, len(ind)))
             ind[i] = 1 - ind[i]  # Mutación bit-flip usual
         return ind, # Siempre se ha de devolver una tupla con estas funciones
-    
-    def evaluate_individual(self, individual):
-        return evaluate_ind(self.original_data, individual, self.eleccion_fitness, self.metodo_clust, self.linkage_hierarchical)
 
-
-    def map_function(self, func, *args):
-        with ProcessPoolExecutor() as executor:
-            return list(executor.map(func, *args))
-        
     def run(self):
         random.seed(self.seed)
         
@@ -192,13 +181,13 @@ class GeneticSearchParallel:
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
         # Registrar la función de evaluación, el operador de cruce, mutacion y seleccion
-        toolbox.register("evaluate", self.evaluate_individual)
+        toolbox.register("evaluate", lambda ch : evaluate_ind(self.data,ch,self.eleccion_fitness,self.metodo_clust,self.linkage_hierarchical))
         toolbox.register("mate", self.cxUniformModified)
         toolbox.register("mutate", self.mutFlipBitModified)
         toolbox.register("select", tools.selTournament, tournsize=10)
 
         # Evalución paralela para agilizar calculos - NO SI NO SE EJECUTA python -m scoop
-        toolbox.register("map", self.map_function)
+        toolbox.register("map", futures.map)
 
         # Estadisticas de fitness por generacion
         stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
@@ -213,8 +202,7 @@ class GeneticSearchParallel:
         logbook = tools.Logbook()
         logbook.header = "gen", "nevals", "avg", "std", "min", "max"
 
-        # init_global = time.time()
-        # Creacion una población inicial
+        # Cracion una población inicial
         population = toolbox.population(self.npop)
 
         # Lista que ira almacenando los mejores individuos generacion a generacion
@@ -227,17 +215,16 @@ class GeneticSearchParallel:
         hof = tools.HallOfFame(self.hof_size)
         
         # Inicializacion del Diccionario contador
-        hof_counter = dict() #solo cuenta con clave las variables, no el primere gen que es el numerod e clusters {key:(fitness_maximo_encontrado_para_ese_key, veces_entradas_en_hof)}
+        hof_counter = dict()#solo cuenta con clave las variables, no el primere gen que es el numerod e clusters {key:(fitness_maximo_encontrado_para_ese_key, veces_entradas_en_hof)}
+
 
         # Evaluacion inicial de los individuos
         invalid_ind = [ind for ind in population if not ind.fitness.valid]
-        # init = time.time() # para tests de tiempo
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-        # fin = time.time()
-
-        # print(f'Tiempo de evaluacion de la poblacion de la generacion {1}: {fin-init}') 
-        # init2 = time.time()
+        
+ 
         for ind, fit in zip(invalid_ind, fitnesses):
+            #print(fit)
             ind.fitness.values = fit
             #modificamos  en el diccionario cada fitness maximo para cada cluster
             val=fit[0]
@@ -247,9 +234,6 @@ class GeneticSearchParallel:
                     self.num_clusters_and_its_max_fitness[cluster_number]= (val,ind)
             else:
                 self.num_clusters_and_its_max_fitness[cluster_number]= (val,ind)
-
-        # fin2 = time.time()
-        # print(f'Tiempo de actualizacion de diccionario {1}: {fin2-init2}')
         # Se actualiza el HOF
         hof.update(population)
 
@@ -263,14 +247,10 @@ class GeneticSearchParallel:
             else :
                 hof_counter[key] = (ind.fitness.values[0],1)
         
-        # Definicion de variables para buscar convergencia en el HOF
-        hof_unchanged_count=0 
-        latest_hof_snapshot = set(tuple(ind) for ind in hof) # Realmente no necesario definirlo como set puesto que el HoF esta ordenado, pero para curarnos en salud
         
         # Se actualizan las listas para el mejor fitness y fitness medio por generacion
-        if self.graficar_evolucion:
-            best_inds.append(hof[0]) # Inicialmente
-            avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
+        best_inds.append(hof[0]) # INICIALMENTE 
+        avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
 
         record = stats_fit.compile(population)
         #print(record)
@@ -278,8 +258,6 @@ class GeneticSearchParallel:
         logbook.record(gen=0, nevals=len(invalid_ind), **record)
         print(logbook.stream)
 
-        # fin_global = time.time()
-        # print(f'Tiempo de ejecucion de la inicializacion: {fin_global-init_global}')
         # Se ejecuta el algoritmo evolutivo
         for gen in range(self.ngen):
             print(f' \n \n --- Generacion {gen+1} ---')
@@ -293,7 +271,6 @@ class GeneticSearchParallel:
             # Evaluacion de individuos con fitness no valido
             # Los individuos con fitness no valido son los hijos.
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            # init = time.time()
             fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)            
             for ind, fit in zip(invalid_ind, fitnesses):
                 #print(fit)
@@ -307,9 +284,7 @@ class GeneticSearchParallel:
                 else:
                     self.num_clusters_and_its_max_fitness[cluster_number]= (val,ind)
 
-            # fin = time.time()
 
-            # print(f'Tiempo de evaluacion de la poblacion de la generacion {gen+1}: {fin-init}') 
             # Extendemos la poblacion con los individuos del hof (elitismo)
             offspring.extend(hof.items)
 
@@ -340,44 +315,30 @@ class GeneticSearchParallel:
             population[:] = offspring
 
             # Actualizamos la lista de mejores individuos y fitness medio por poblacion
-            if self.graficar_evolucion:
-                best_inds.append(hof[0])
-                avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
+            best_inds.append(hof[0])
+            avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
 
             record = stats_fit.compile(population)
             #print(record)
         
             logbook.record(gen=gen+1, nevals=len(invalid_ind), **record)
             print(logbook.stream)
-            
-            current_hof_snapshot = set(tuple(ind) for ind in hof)
-            if current_hof_snapshot == latest_hof_snapshot:
-                hof_unchanged_count += 1
-            else:
-                hof_unchanged_count = 0
-                latest_hof_snapshot = current_hof_snapshot
-            
-            if hof_unchanged_count >= self.convergence_generations:
-                print(f'Early Stopping due to Hall Of Fame not changing in {gen+1} generations')
-                self.ultima_gen={tuple(ind):ind.fitness.values[0] for ind in offspring}
-                break
 
         # Evolucion de fitness a lo largo de las generaciones
-        if self.graficar_evolucion:
-            fitness_vals = []
-            for _, ind in enumerate(best_inds, start=1):
-                fitness_vals.append(ind.fitness.values[0])
+        fitness_vals = []
+        for _, ind in enumerate(best_inds, start=1):
+            fitness_vals.append(ind.fitness.values[0])
 
-            num_generations = len(fitness_vals)  
-            plt.figure(figsize=(10, 5))
-            plt.plot(range(1, num_generations + 1), fitness_vals, marker='o', linestyle='-', color='b', label='Fitness mejor individuo')
-            plt.plot(range(1, num_generations + 1), avg_fitness_history[:num_generations], marker='x', linestyle='--', color='r', label='Fitness medio')
-            plt.title('Fitness del Mejor Individuo y Promedio por Generación')
-            plt.xlabel('Número de Generación')
-            plt.ylabel('Fitness')
-            plt.legend()
-            plt.grid(True)
-            plt.show()
+        num_generations = len(fitness_vals)  
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(1, num_generations + 1), fitness_vals, marker='o', linestyle='-', color='b', label='Fitness mejor individuo')
+        plt.plot(range(1, num_generations + 1), avg_fitness_history[:num_generations], marker='x', linestyle='--', color='r', label='Fitness medio')
+        plt.title('Fitness del Mejor Individuo y Promedio por Generación')
+        plt.xlabel('Número de Generación')
+        plt.ylabel('Fitness')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
         self.hof=hof
         self.hof_counter=hof_counter
         return hof, hof_counter,self.num_clusters_and_its_max_fitness,self.ultima_gen
@@ -394,7 +355,7 @@ class GeneticSearchParallel:
 #realmente esto se deberia meter como funcion de una clase, le paso los atributos como parametros pero luego se le pasaria el self solo
 def evaluate_ind(data,chromosome,fitness,metodo_clust,linkage_hierarchical,dicc_cluster_max_fitness=None):#el ultimo parametro es para poder guardar en el diccionario los valores correspondientes
     '''
-    fitness: posibles valores 'ami','nmi',chi2','f-score','davies-bouldin','dunn-score','silhouette', 'sse', 'calinski_harabasz'
+    fitness: posibles valores 'ami','chi2','f-score','davies-bouldin','dunn-score','silhouette', 'sse', 'calinski_harabasz'
     metodo_clust: posibles valores 'Kmeans','Hierarchical','DBSCAN'
     '''
     try:
@@ -454,7 +415,7 @@ def evaluate_ind(data,chromosome,fitness,metodo_clust,linkage_hierarchical,dicc_
                 ev=-1.*metricas.sse_score()#se invierte para que el máximo sea 0
             if fitness =='calinski_harabasz':
                 ev=metricas.calinski_harabasz_score()
-            if fitness == 'nmi':
+            if fitness =='nmi':
                 ev=metricas.nmi_score()
 
         return (ev,)
