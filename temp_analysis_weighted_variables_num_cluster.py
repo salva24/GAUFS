@@ -256,10 +256,6 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     red_points_y.append(max(0, y6[-1]))  # Calculamos la diferencia para el último valor de y6 (siendo y6[i+1] = 0)
     # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
 
-    # if k_decay>0:
-    #     #aqui no deberia entrar 
-    #     red_points_y=[p/(1+((len(red_points_y)-1) / (math.exp(k_decay * i)))) for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables
-
 
     ax[2,1].plot(x6, y6)
     ax[2,1].scatter(x6,y6)
@@ -294,7 +290,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
 
     if k_decay>0:
-        red_points_y=[p/(1+((len(red_points_y)-1) / (math.exp(k_decay * i)))) for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables
+        red_points_y=[p/(1+((len(red_points_y)-1) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables. k_decay * i < 700 avoids overflow
 
         
         
@@ -351,7 +347,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
 
     if k_decay>0:
-        red_points_y=[p/(1+((len(red_points_y)-1) / (math.exp(k_decay * i)))) for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables
+        red_points_y=[p/(1+((len(red_points_y)-1) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables.k_decay * i < 700 avoids overflow
         
         #########################################################################################################################3
         """Lo hago asi por crear la tabla , pero es algo a tener en cuenta en la refactorización : El diccionario cuyas claves son los cromosomas tiene 'saltos de mas de una variable' y para luego "rescatar" el cromosoma óptimo se hace complicado.  ()

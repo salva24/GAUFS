@@ -45,7 +45,7 @@ def generar_datos_sinteticos(n_muestras=500, n_variables=10, n_clusters=4, seed=
 class GeneticSearchParallel:
 
     def __init__(self, data,  seed=10,ngen=None,npop=None,cxpb=0.8,mutpb=0.1,tol=None,
-                 convergence_generations = 10, hof_size=(0.1, 0.2),nobj=1,eleccion_fitness= 'ami',metodo_clust='Hierarchical',linkage_hierarchical = 'average',
+                 convergence_generations = 50, hof_size=(0.1, 0.2),nobj=1,eleccion_fitness= 'ami',metodo_clust='Hierarchical',linkage_hierarchical = 'average',
                  num_var_control=0,banda_busqueda_clusters=None,radio_rango_de_busqueda=3,numero_mejores_cromososmas_ponderacion_var_sig=None, graficar_evolucion = False):
         '''
         eleccion_fitness = 'ami','chi2','f-score',davies-bouldin','silhouette','sse','calinski_harabasz'
