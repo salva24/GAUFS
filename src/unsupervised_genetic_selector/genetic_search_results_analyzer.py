@@ -3,22 +3,23 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class GeneticSarchResultsAnalyzer:
-    def __init__(self, name, artificiales, fitness, linkage, max_num_considerado_clusters=26, parallel_evaluation=False, directory=None,dummies=False):
-        self.name = name
-        self.artificiales = artificiales
+    def __init__(self, fitness, linkage, max_number_of_clusters_considerated,ponderation_variables,X,y=None):
         self.fitness = fitness
         self.linkage = linkage
-        self.max_num_considerado_clusters = max_num_considerado_clusters
-        self.parallel_evaluation = parallel_evaluation
-        self.directory = directory
-        self.dummies = dummies
-
+        self.max_number_of_clusters_considerated = max_number_of_clusters_considerated
+        self.X = X
+        self.y = y
+        self.num_vars = len(ponderation_variables)
+        self.ponderation_variables = ponderation_variables
 
     def cortar_ponderacion(ponderacion_variables,umbral):
         return [1 if pond>=umbral else 0 for pond in ponderacion_variables]
 
-    def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_clusters=26,parallel_evaluation=False, directory=None,dummies=False, flatten=True):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
-        test=BuildTest(name,artificiales=artificiales, parallel_evaluation=parallel_evaluation,dummies=dummies)
+    def analyse_dataset(name,genetic_result_path=None, output_path=None, verbose=False, flatten=True):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
+        selected_vars = None
+        num_clusters=None
+
+        
         num_vars_originales = test.nvars
         num_clusters = test.num_clusters
 
