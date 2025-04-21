@@ -65,83 +65,9 @@ def create_data_center(seed,center,num_instances,num_dims_sig,num_dummies_unif,n
 
 
 
-#Ponderacion del hall of fame sin contador
-def ind_scores_sin_contador(hof):
-    '''
-    Asigna una puntuación entre cero y uno a cada cromosoma según su valor de fitness
-    '''
-    global_fit = sum([ind.fitness.values[0] for ind in hof])
-    scores = [ind.fitness.values[0]/global_fit for ind in hof]
-    return scores
-#Ponderacion del hall of fame con contador
-def ind_scores_con_contador(hof,contador_hof):
-    '''
-    Asigna una puntuación entre cero y uno a cada cromosoma según su valor de fitness y veces q ha entrado en el hof en caso de que entren dos cromosomas con mismas variables pero distinto numero de clusters solo se tiene en cueenta el de mayor fitness
-    '''
-    dicc_fitness_maximo_indice_alcanzado={}
-    for i,ind in enumerate(hof):#cromosoma que tiene el fitness maximo para cada config de variables
-        key=tuple(ind[1:])
-        if(key in dicc_fitness_maximo_indice_alcanzado):
-            if(ind.fitness.values[0]>dicc_fitness_maximo_indice_alcanzado[key][0]):
-                dicc_fitness_maximo_indice_alcanzado[key]=(ind.fitness.values[0],i)
-        else:
-            dicc_fitness_maximo_indice_alcanzado[key]=(ind.fitness.values[0],i)
-    res=[]
-    for i,ind in enumerate(hof):
-        key=tuple(ind[1:])
-        if dicc_fitness_maximo_indice_alcanzado[key][1]==i:
-            res.append(ind.fitness.values[0]*contador_hof[key])
-        else:#le asignamos el valor obnetinido porque el contador_hof ya se lo lleva el de fitness maximo
-            res.append(0.)
-
-    global_fit_and_suma_contadores = sum(res)
-    return [x/global_fit_and_suma_contadores for x in res]
 
 
-def variable_significance_solo_dado_contador(numero_var, hof_counter, numero_cromosomas_max):#usar este a fecha 24/12/24
-    chromosomes=sorted(hof_counter.items(), key=lambda item: item[1][0], reverse=True)[:numero_cromosomas_max]
-    scores=[]
-    suma=0
-    for it in chromosomes:
-        score=it[1][0]*it[1][1]
-        scores.append(score)
-        suma+=score
 
-    scores_normalized=[x/suma for x in scores]
-    res = [0 for _ in range(numero_var)]
-    for i in range(numero_var):#ponderacion de variables y no de num de clusters
-        for j,s in enumerate(scores_normalized):
-            res[i] += s * chromosomes[j][0][i]
-    return res
-
-
-def variable_significance_con_contador(hof,contador_hof):#no usar
-    '''
-    En base a los mejores individuos encontrados, devuelve un cromosoma final calculado por
-    la media ponderada según fitness de cada variable y veces que ha entrado el cromosoma en el hof, elemento a elemento 
-    '''
-    variables_size = len(hof[0])-1
-    hof_size = len(hof)
-    scores = ind_scores_con_contador(hof, contador_hof)
-    res = [0 for _ in range(variables_size)]
-    for i in range(variables_size):#ponderacion de variables y no de num de clusters
-        for j in range(hof_size):
-            res[i] += scores[j] * hof[j][i+1]
-    return res
-
-def variable_significance_sin_contador(hof):#no usa el sistema contador. No usar
-    '''
-    En base a los mejores individuos encontrados, devuelve un cromosoma final calculado por
-    la media ponderada según fitness de cada variable, elemento a elemento 
-    '''
-    chromosome_size = len(hof[0])
-    hof_size = len(hof)
-    scores = ind_scores(hof)
-    res = [0 for _ in range(chromosome_size)]
-    for i in range(chromosome_size):
-        for j in range(hof_size):
-            res[i] += scores[j] * hof[j][i]
-    return res
 
 
 def add_dummies(data, num_unif, num_beta, alpha_param, beta_param,seed = 10):

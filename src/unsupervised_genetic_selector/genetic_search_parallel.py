@@ -139,7 +139,7 @@ class GeneticSearchParallel:
         return ind, # Siempre se ha de devolver una tupla con estas funciones
     
     def evaluate_individual(self, individual):
-        return evaluate_ind(self.original_data, individual, self.eleccion_fitness, self.metodo_clust, self.linkage_hierarchical)
+        return self.evaluate_ind(self.original_data, individual, self.eleccion_fitness, self.metodo_clust, self.linkage_hierarchical)
 
 
     def map_function(self, func, *args):
@@ -357,11 +357,94 @@ class GeneticSearchParallel:
         return hof, hof_counter,self.num_clusters_and_its_max_fitness,self.ultima_gen
     
 
-    def get_hof_ponderado(self):#este asume que no hay variables de control y lo hace con el sistema contador. Es el que hay que usar a fecha 21/11/2024
-        var=self.numero_mejores_cromososmas_ponderacion_var_sig
+    def get_hof_ponderado(self):
+        numero_cromosomas_max=self.numero_mejores_cromososmas_ponderacion_var_sig
         if(self.numero_mejores_cromososmas_ponderacion_var_sig==None):
-            var = 2*(len(self.hof[0])-1)
-        self.hof_ponderado=variable_significance_solo_dado_contador(len(self.hof[0])-1, self.hof_counter,var)
+            numero_cromosomas_max = 2*(len(self.hof[0])-1)
+        numero_var=len(self.hof[0])-1
+        chromosomes=sorted(self.hof_counter.items(), key=lambda item: item[1][0], reverse=True)[:numero_cromosomas_max]
+        scores=[]
+        suma=0
+        for it in chromosomes:
+            score=it[1][0]*it[1][1]
+            scores.append(score)
+            suma+=score
+
+        scores_normalized=[x/suma for x in scores]
+        res = [0 for _ in range(numero_var)]
+        for i in range(numero_var):#ponderacion de variables y no de num de clusters
+            for j,s in enumerate(scores_normalized):
+                res[i] += s * chromosomes[j][0][i]
+        self.hof_ponderado=res
         return self.hof_ponderado
+    
+    def evaluate_ind(data,chromosome,fitness,metodo_clust,linkage_hierarchical,dicc_cluster_max_fitness=None):#el ultimo parametro es para poder guardar en el diccionario los valores correspondientes
+        '''
+        fitness: posibles valores 'ami','nmi',chi2','f-score','davies-bouldin','dunn-score','silhouette', 'sse', 'calinski_harabasz'
+        metodo_clust: posibles valores 'Kmeans','Hierarchical','DBSCAN'
+        '''
+        try:
+            cluster_number = chromosome[0]
+            variables = chromosome[1:]
+            if np.all(np.array(variables) == 0):
+                #print("Cromosoma nulo - fitness muy negativo")
+                return -10000000000,
+            filtered_vars = [var for var,i in zip(data.columns,variables) if i == 1]  #etiq es la ultima columna
+            filtered_vars.append('ETIQ')
+            filtered_data = data[filtered_vars]
+            
+            #hacemos clustering
+            experiment=None
+            if metodo_clust=="Kmeans":
+                experiment = KmeansExperiment(
+                                data=filtered_data,
+                                seed=10, #self.seed
+                                #linkage='average',
+                                n_clusters = cluster_number,
+                                target= 'ETIQ' #self.target
+                            )
+            elif metodo_clust=='DBSCAN':
+                experiment = DBSCANExperiment(
+                                data=filtered_data,
+                                n_clusters = cluster_number,
+                                target= 'ETIQ' #self.target,
+                                )
+            else:
+                experiment = HierarchicalExperiment(
+                                data=filtered_data,
+                                #seed=10, #self.seed
+                                linkage= linkage_hierarchical,
+                                n_clusters = cluster_number,
+                                target= 'ETIQ', #self.target
+                            )
+                
+            
+            experiment.run()
+            ev = 0,
+            if (fitness== 'chi2'):
+                metricas = ClusteringMetrics(experiment.data, experiment) #cuando se usa jerarquico va bien 
+                ev = metricas.chi2()
+            else:
+                metricas = ClusteringMetrics( data, experiment)
+                if (fitness == 'f-score'):
+                    ev = metricas.f_score()
+                if (fitness == 'davies-bouldin'):
+                    ev = 1 - metricas.davies_bouldin_score() #lo invierto porque en el davies bouldin el 0 es mejor que 1 
+                if (fitness == 'dunn-score'):
+                    ev = metricas.dunn_score()
+                if (fitness == 'ami'):
+                    ev = metricas.mutual_information_score()
+                if fitness=='silhouette':
+                    ev=metricas.silhouette_score()
+                if fitness=='sse' :
+                    ev=-1.*metricas.sse_score()#se invierte para que el máximo sea 0
+                if fitness =='calinski_harabasz':
+                    ev=metricas.calinski_harabasz_score()
+                if fitness == 'nmi':
+                    ev=metricas.nmi_score()
+
+            return (ev,)
+        except:
+            print(f'Error con el cromosoma: {chromosome};')
 
 
