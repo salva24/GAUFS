@@ -302,7 +302,7 @@ class GeneticSarchResultsAnalyzer:
         # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
 
         if k_decay>0:
-            red_points_y=[p/(1+((len(red_points_y)-1) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables. k_decay * i < 700 avoids overflow
+            red_points_y=[p/(1+(len(red_points_y) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables. k_decay * i < 700 avoids overflow
 
             
             
@@ -359,7 +359,7 @@ class GeneticSarchResultsAnalyzer:
         # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
 
         if k_decay>0:
-            red_points_y=[p/(1+((len(red_points_y)-1) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables.k_decay * i < 700 avoids overflow
+            red_points_y=[p/(1+(len(red_points_y) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables.k_decay * i < 700 avoids overflow
             
             #########################################################################################################################3
             """Lo hago asi por crear la tabla , pero es algo a tener en cuenta en la refactorización : El diccionario cuyas claves son los cromosomas tiene 'saltos de mas de una variable' y para luego "rescatar" el cromosoma óptimo se hace complicado.  ()
