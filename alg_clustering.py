@@ -4,7 +4,6 @@ from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.datasets import make_blobs
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
-from functions.clustering import get_chi1_cluster
 from sklearn import metrics
 from scipy.optimize import linear_sum_assignment
 from sklearn.metrics import confusion_matrix

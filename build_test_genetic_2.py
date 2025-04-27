@@ -1,6 +1,5 @@
 
 from utils_genetic2 import *
-from genetic2 import *
 from genetic2_parallel import *
 import numpy as np
 import pandas as pd

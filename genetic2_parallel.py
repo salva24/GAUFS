@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 import random
 from concurrent.futures import ProcessPoolExecutor
-import AuxFunctions as aux
-from experiments import KmeansExperiment
 from alg_clustering import *
 from deap import base, tools, algorithms, creator
 import matplotlib.pyplot as plt
