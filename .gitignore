@@ -1,3 +1,4 @@
+*.csv
 env-cluster-searcher/
 bibliografia/
 plots/
@@ -29,7 +30,7 @@ results/
 nohup.out
 #PruebasExcel
 resultadosPruebas/*
-datasets/*
+datasets/*.csv
 ecuaciones_scratch.py
 
 # Byte-compiled / optimized / DLL files
