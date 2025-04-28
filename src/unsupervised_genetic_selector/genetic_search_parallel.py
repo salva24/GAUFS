@@ -444,7 +444,7 @@ class GeneticSearchParallel:
                     ev=metricas.nmi_score()
 
             return (ev,)
-        except:
-            print(f'Error con el cromosoma: {chromosome};')
+        except Exception as e:
+            print(f'Error con el cromosoma: {chromosome}; Excepción: {type(e).__name__} - {e}')
 
 
