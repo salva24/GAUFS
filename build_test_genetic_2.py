@@ -66,8 +66,8 @@ class BuildTest:
                 2) Mas de 100 variables : 7000 ind, 300 gen  
           """
 
-          self.rangeNgen = [150] if self.nvars_dummies <= 100 else [300]  
-          self.rangeNpop = [1500] if self.nvars_dummies <= 100 else [7000]
+          self.rangeNgen = [2]#[150] if self.nvars_dummies <= 100 else [300]  
+          self.rangeNpop = [5]#[1500] if self.nvars_dummies <= 100 else [7000]
 
 
           self.rangeMetodo_clust = ['Hierarchical']

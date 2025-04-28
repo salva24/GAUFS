@@ -22,8 +22,8 @@ def main():
         test = BuildTest(name_file,artificiales = False, parallel_evaluation=True, dummies=dummies)
         
         #comentar estas dos lineas para solo sacar graficas
-        test.run()
-        test.convert_csv()
+        # test.run()
+        # test.convert_csv()
         
         fitness_internos=["silhouette"]
         linkages=["ward"]

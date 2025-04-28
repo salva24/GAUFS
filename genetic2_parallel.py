@@ -457,5 +457,5 @@ def evaluate_ind(data,chromosome,fitness,metodo_clust,linkage_hierarchical,dicc_
                 ev=metricas.nmi_score()
 
         return (ev,)
-    except:
-        print(f'Error con el cromosoma: {chromosome};')
+    except Exception as e:
+        print(f'Error con el cromosoma: {chromosome}; Excepción: {type(e).__name__} - {e}')

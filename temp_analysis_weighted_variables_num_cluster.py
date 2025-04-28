@@ -14,6 +14,18 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
 
     ponderacion_variables=test.hof_ponderado(fitness=fitness,linkage=linkage)
     umbrales=sorted(set(ponderacion_variables),reverse=True)
+    
+    if(len(umbrales)==1):#there is only one selecction possible, selceting all variables
+        corte=cortar_ponderacion(ponderacion_variables,umbrales[0])
+        dicc_clusters_fit=test.grafica_vars_fijadas(crom_vars=corte,fitness=fitness,linkage=linkage,max_num_considerado_clusters=max_num_considerado_clusters)
+        clusters_para_maximo=None
+        maximo_fitness=None
+        for key in dicc_clusters_fit.keys():
+            if(maximo_fitness==None or maximo_fitness<dicc_clusters_fit[key] or (maximo_fitness==dicc_clusters_fit[key] and clusters_para_maximo<key)):#en caso de empate nos quedamos con el numero de clusters mas alto
+                maximo_fitness=dicc_clusters_fit[key]
+                clusters_para_maximo=key
+        print(f'The only selection possible is selecting all variables and  num_clusters={clusters_para_maximo} with fitness={maximo_fitness}')
+        return #we return nothing
 
     posibles_selecciones_variables=[]
 
@@ -400,6 +412,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
         json.dump(data, file, indent=4)
 
     print(f'Datos guardados como JSON en {json_path}')
+
 
 
 
