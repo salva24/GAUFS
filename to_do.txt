@@ -1,3 +1,4 @@
 1) check if the number maximon of clusters is bigger than the amount os rows in the dataset before caling genetic in class coordinator
 2) si el genetico solo devuelve una possible selección hay que hacer un tratamiento especial
 3)quitar max fitness clsuter diccionario del genetico
+4)cambiar titulos de graficas para que vayan acorde al paper
