@@ -13,31 +13,6 @@ from sklearn.datasets import make_blobs
 # import math
 # import time
 
-# Función para generar datos sintéticos con etiquetas
-def generar_datos_sinteticos(n_muestras=500, n_variables=10, n_clusters=4, seed=42):
-    """
-    Genera datos sintéticos con etiquetas ('ETIQ') y variables aleatorias.
-    - n_muestras: número de filas (instancias)
-    - n_variables: número total de variables
-    - n_clusters: número de clústeres verdaderos
-    - seed: semilla para reproducibilidad
-    """
-    np.random.seed(seed)
-    
-    # Generar características con clústeres usando make_blobs
-    datos, etiquetas = make_blobs(n_samples=n_muestras, 
-                                  centers=n_clusters, 
-                                  n_features=n_variables-1,  # Una variable menos para agregar control
-                                  random_state=seed)
-    
-    # Convertir a DataFrame
-    df = pd.DataFrame(datos, columns=[f'var{i}' for i in range(n_variables-1)])
-    
-    # Añadir la columna de etiquetas
-    df['ETIQ'] = etiquetas
-    
-    return df
-
 
 
 class GeneticSearchParallel:

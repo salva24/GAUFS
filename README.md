@@ -25,4 +25,5 @@ After execution, results will be generated in the `results/` folder. The script 
   - `genetic2_parallel.py` - Parallel genetic algorithm implementation
   - `alg_clustering.py` - Clustering algorithms and metrics
   - `analysis_weighted_variables_num_cluster.py` - Variable analysis tools
-- `main.py` - Main execution script
+  - `data_generators` - Methods related to synthetic data generation. The file can be executed to generate an example of a corners dataset on ./datasets/synthetic_data_corners.csv
+- `main.py` - Main execution script for GAUFS algorithm
