@@ -1,6 +1,6 @@
-from build_test_genetic_2 import *
+from src.build_test_genetic_2 import *
 # from analysis_weighted_variables_num_cluster import analyse_dataset
-from temp_analysis_weighted_variables_num_cluster import analyse_dataset
+from src.temp_analysis_weighted_variables_num_cluster import analyse_dataset
 import json
 from tqdm import tqdm 
 

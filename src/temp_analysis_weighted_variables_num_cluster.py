@@ -1,4 +1,4 @@
-from build_test_genetic_2 import *
+from src.build_test_genetic_2 import *
 import json
 from mpl_toolkits.mplot3d import Axes3D
 

@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 import random
 from concurrent.futures import ProcessPoolExecutor
-from alg_clustering import *
+from src.alg_clustering import *
 from deap import base, tools, algorithms, creator
 import matplotlib.pyplot as plt
 from scipy.stats import beta
-from utils_genetic2 import *
+from src.utils_genetic2 import *
 import pandas as pd
 import numpy as np
 from sklearn.datasets import make_blobs

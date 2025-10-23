@@ -1,9 +1,9 @@
 
-from utils_genetic2 import *
-from genetic2_parallel import *
+from src.utils_genetic2 import *
+from src.genetic2_parallel import *
 import numpy as np
 import pandas as pd
-from alg_clustering import *
+from src.alg_clustering import *
 import warnings
 import random
 import matplotlib.pyplot as plt
@@ -66,8 +66,8 @@ class BuildTest:
                 2) Mas de 100 variables : 7000 ind, 300 gen  
           """
 
-          self.rangeNgen = [2]#[150] if self.nvars_dummies <= 100 else [300]  
-          self.rangeNpop = [5]#[1500] if self.nvars_dummies <= 100 else [7000]
+          self.rangeNgen = [150] if self.nvars_dummies <= 100 else [300] #set to [2] for quick testing 
+          self.rangeNpop = [1500] if self.nvars_dummies <= 100 else [7000] #set to [5] for quick testing
 
 
           self.rangeMetodo_clust = ['Hierarchical']
