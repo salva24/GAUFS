@@ -26,4 +26,14 @@ After execution, results will be generated in the `results/` folder. The script 
   - `alg_clustering.py` - Clustering algorithms and metrics
   - `analysis_weighted_variables_num_cluster.py` - Variable analysis tools
   - `data_generators` - Methods related to synthetic data generation. The file can be executed to generate an example of a corners dataset on ./datasets/synthetic_data_corners.csv
-- `main.py` - Main execution script for GAUFS algorithm
+- `main.py` - Main execution script for GAUFS algorithm/
+- `comparison/` — Files used for comparison with the AutoUFS tool.
+  - `dataset-papers/` — Input CSV files for the comparison.
+  - `results-papers/` — Output results, containing one folder for each compared dataset.
+  - `AutoUFSTool-main/` — Folder cloned from the AutoUFS-tool GitHub repository.
+    - `main-comparison.m` — MATLAB script to run the comparison.
+  - `alg_clustering.py` — Python module with utility functions for clustering.
+  - `automate_v2.py` — Python script to run the automatic comparison process.
+  - `datasets_mat.ipynb` — Jupyter notebook with tools for converting CSV files into MATLAB structures.
+
+
