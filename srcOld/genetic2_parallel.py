@@ -58,9 +58,7 @@ class GeneticSearchParallel:
         if type(hof_size) == tuple:
             alpha = hof_size[1]
             beta = hof_size[0]
-            # tam = int(npop*(alpha-(alpha-beta)/(self.data.shape[1]-1)))
             tam = int(npop*(alpha-(alpha-beta)*np.log(2)/np.log((self.data.shape[1]+1))))
-            # print(((alpha-beta)/(self.data.shape[1]-1)))
             self.hof_size = tam if tam != 0 else 1
         else:
             self.hof_size = hof_size
