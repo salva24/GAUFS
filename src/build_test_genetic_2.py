@@ -21,7 +21,7 @@ import matplotlib
 # Cada fila un experimento correspondiente a 3 ejecuciones del genetico con 3 semillas distintas
 
 class BuildTest:
-     def __init__(self,name_data, artificiales=False, parallel_evaluation=False,dummies=False):
+     def __init__(self,name_data, artificiales=False, parallel_evaluation=False,dummies=False, estimate_num_clusters_beforehand=False):
           #name_data : nombre_dataset SIN SUFIJO .CSV (debe estar en la carpeta datasets)
           #artificiales = True si los datos estan en datasets/artificiales_navidad, False cc
           #dummies = True si se le quieren añadir dummies 
@@ -78,7 +78,28 @@ class BuildTest:
           self.range_num_var_control=[0]
           #una de estas dos deber ser una lista vacia porque son incompatibles
           self.radios_rango_busqueda_clusters=[]
-          self.rango_banda_clusters=[[2,26]]
+
+          max_num_clusers_considerado_mas_uno = 26 #para que vaya de 2 a 25
+
+          if estimate_num_clusters_beforehand==False:
+               self.rango_banda_clusters=[[2,max_num_clusers_considerado_mas_uno]]
+          else:
+               #we take the number of clusters as the one that maximizes the fitness using all variables hoping that it is close to the real number
+               num_cluster_max_fitness_using_all_variables = -1
+               max_fitness = -float('inf')
+
+               for i in range (2,max_num_clusers_considerado_mas_uno):
+                    todo_a_uno = [1]*(self.nvars_dummies)
+                    crom_total = [i] + todo_a_uno
+                    fitness_i = evaluate_ind(self.data_dummies,crom_total,'silhouette','hierarchical','ward')[0]
+                    if fitness_i > max_fitness:
+                         max_fitness = fitness_i
+                         num_cluster_max_fitness_using_all_variables = i
+
+               #now there is only one possible number of clusters for GAUFS to consider
+               self.rango_banda_clusters= [[num_cluster_max_fitness_using_all_variables,num_cluster_max_fitness_using_all_variables+1]]
+          
+          
           if(len(self.rango_banda_clusters)>0 and len(self.radios_rango_busqueda_clusters)>0):
                print("ERROR: no pueden ser radios_rango_busqueda_clusters y rango_banda_clusters ambas no vacias")
 
