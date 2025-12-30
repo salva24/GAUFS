@@ -197,3 +197,5 @@ cython_debug/
 
 repos.ipynb
 tabla.csv
+
+results_old/*

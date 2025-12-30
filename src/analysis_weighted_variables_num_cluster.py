@@ -131,18 +131,18 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
 
     fig3D= plt.figure()
     ax3D = fig3D.add_subplot(111, projection='3d')
-    ax3D.plot_trisurf(x, y, z, cmap='viridis') #crea una superficie uniendo los puntos
-    #ax3D.scatter(x,y,z)
+    # ax3D.plot_trisurf(x, y, z, cmap='viridis') #crea una superficie uniendo los puntos
+    #ax3D.scatter(x,y,z)plot_trisurf
 
-    ax3D.set_title(f'{name} Gráfica 3D : {fitness}, {linkage}')
-    ax3D.set_xlabel('Número de variables')
-    ax3D.set_ylabel('Número de clusters')
-    ax3D.set_zlabel(f'Fitness {fitness}')
+    # ax3D.set_title(f'{name} Gráfica 3D : {fitness}, {linkage}')
+    # ax3D.set_xlabel('Número de variables')
+    # ax3D.set_ylabel('Número de clusters')
+    # ax3D.set_zlabel(f'Fitness {fitness}')
 
 
     output_path_3D=directory+f'/{name}_{fitness}_{linkage}_3D.png'
-    plt.savefig(output_path_3D)
-    plt.close(fig3D)
+    # plt.savefig(output_path_3D)
+    # plt.close(fig3D)
 
     ################################save diccionaries
     json_path = os.path.join(directory, f'{name}_{fitness}_{linkage}.json')
