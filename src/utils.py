@@ -41,3 +41,31 @@ def evaluate_ind(unlabeled_data, cluster_number, variables, clustering_method, e
     except Exception as e:
         print(f'Error evaluating the individual with {cluster_number} clusters and the selection {variables}; Exception: {type(e).__name__} - {e}')
 
+@staticmethod
+def compute_variable_significance(num_variables, hof_counter, max_number_selections_for_ponderation):
+    '''
+    Computation of variable significance based on the Hall of Fame individuals and their evaluation scores.
+    The values between 0. and 1. are based on the score and the number of times the individual was selected in the HoF.
+    
+    Args:
+        num_variables (int): Number of variables in the dataset.
+        hof_counter (dict): Dictionary where keys are binary tuples representing variable selections
+                            and values are tuples of (score, selection_count). Where score is the best fitness 
+                            achieved for a chromosome that includes that variable selection, and selection_count 
+                            is the number of times a chromosome which includes that selection entered the Hall of Fame.
+        max_number_selections_for_ponderation (int): Maximum number of individuals to consider for ponderation.
+    '''
+    chromosomes=sorted(hof_counter.items(), key=lambda item: item[1][0], reverse=True)[:max_number_selections_for_ponderation]
+    scores=[]
+    suma=0
+    for it in chromosomes:
+        score=it[1][0]*it[1][1]
+        scores.append(score)
+        suma+=score
+
+    scores_normalized=[x/suma for x in scores]
+    res = [0 for _ in range(num_variables)]
+    for i in range(num_variables):
+        for j,s in enumerate(scores_normalized):
+            res[i] += s * chromosomes[j][0][i]
+    return res

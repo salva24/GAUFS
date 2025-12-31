@@ -23,17 +23,17 @@
         mutation_type = random.choice([1,2,3])
         if mutation_type == 1:
             num_clusters_range = range(self.banda_busqueda_clusters[0],self.banda_busqueda_clusters[1])
-            ind[0] = random.choice(num_clusters_range) # We choose a new number of clusters within the allowed range
+            ind[0] = random.choice(num_clusters_range)
         elif mutation_type == 2:
             i = random.choice(range(1, len(ind)))
-            ind[i] = 1 - ind[i]  # Usual bit-flip mutation
+            ind[i] = 1 - ind[i]  
         else:
             num_clusters_range = range(self.banda_busqueda_clusters[0],self.banda_busqueda_clusters[1])
-            ind[0] = random.choice(num_clusters_range) # We choose a new number of clusters within the allowed range
+            ind[0] = random.choice(num_clusters_range) 
 
             i = random.choice(range(1, len(ind)))
             ind[i] = 1 - ind[i]  # Usual bit-flip mutation
-        return ind, # A tuple must always be returned by these functions
+        return ind, 
     
     def evaluate_individual(self, individual):
         return evaluate_ind(self.original_data, individual, self.eleccion_fitness, self.metodo_clust, self.linkage_hierarchical)
@@ -84,7 +84,6 @@
         logbook = tools.Logbook()
         logbook.header = "gen", "nevals", "avg", "std", "min", "max"
 
-        # init_global = time.time()
         # Creation of an initial population
         population = toolbox.population(self.npop)
 
@@ -138,7 +137,6 @@
         hof_unchanged_count=0 
         latest_hof_snapshot = set(tuple(ind) for ind in hof) # Not really necessary to define it as a set since the HOF is ordered, but done for safety
         
-        # Update the lists for best fitness and average fitness per generation
         if self.graficar_evolucion:
             best_inds.append(hof[0]) # Initially
             avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
@@ -155,7 +153,6 @@
         for gen in range(self.ngen):
             print(f' \n \n --- Generation {gen+1} ---')
             #print(f'Population size: {len(population)}')
-            # Select the next generation of individuals
             offspring = toolbox.select(population, len(population) - self.hof_size)
 
             # Mutation and reproduction of individuals

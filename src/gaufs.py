@@ -2,6 +2,10 @@ import random
 import pandas as pd
 from src.clustering_algorithms import HierarchicalExperiment
 from src.evaluation_metric import *
+from src.genetic_search import GeneticSearch
+from src.utils import *
+import os
+import shutil
 
 class Gaufs:
     def __init__(
@@ -20,7 +24,11 @@ class Gaufs:
         clustering_method=HierarchicalExperiment(linkage='ward'),
         evaluation_metric=SilhouetteScore(),
         cluster_number_search_band=(2, 26),
-        max_number_selections_for_ponderation=None
+        max_number_selections_for_ponderation=None,
+        verbose=True,
+        generate_genetics_log_files=True,
+        graph_evolution=False,
+        output_directory="./out/"
     ):
         """
         Initialize the GAUFS (Genetic Algorithm for Unsupervised Feature Selection) instance.
@@ -51,6 +59,10 @@ class Gaufs:
             evaluation_metric: Metric for evaluating clustering quality. Default: SilhouetteScore(). Must implement evaluation interface.
             cluster_number_search_band (tuple): Range of cluster numbers to explore as (min, max_exclusive). Default: (2, 26). Range: (>= 2, <= num_samples).
             max_number_selections_for_ponderation (int or None): Maximum selections from Hall of Fame for weight computation. Default: 2 * num_vars. Range: >= 1 or None.
+            verbose (bool): Whether to print logs during execution. Default: True.
+            generate_genetics_log_files (bool): Whether to generate a log file with Genetic Algorithm execution details. Default: True.
+            graph_evolution (bool): Whether to generate a graph of the best and average fitness through the Genetica Algorithm's evolution. Default: False.
+            output_directory (str): Path to store generated files including the plots. Default: "../out/".
         """
         # Random seed for reproducibility (randomly generated integer between 0 and 10000)
         self.seed = seed
@@ -103,6 +115,18 @@ class Gaufs:
         # Default: None (will be set to 2 * number of features)
         self.max_number_selections_for_ponderation = max_number_selections_for_ponderation
         
+        # Wether generate a graph showing the evolution of the best fitness score in the Genetic Algorithm
+        self.graph_evolution = graph_evolution
+
+        # Verbosity flag
+        self.verbose = verbose
+
+        # Flag to generate a log file with Genetic Algorithm execution details
+        self.generate_genetics_log_files = generate_genetics_log_files
+
+        #Directory to store generated plots, logs and other files
+        self.output_directory = output_directory
+
         # Input dataset and derived properties
         if unlabeled_data is None:
             # Empty DataFrame when no data provided
@@ -118,8 +142,20 @@ class Gaufs:
             # Stores the best solutions found during evolution
             self.hof_size = hof_size
 
-            
+        # Variable significances for each Genetic execuition
+        self.variable_significances = []
 
+        # Best chromosome for each Genetic execution
+        self.best_chromosomes = []
+
+        #  Each GA instance that has been run in case more specific data is wanted
+        self.ga_instances = []
+
+        # Final averaged variable significance.
+        self.variable_significance = None
+
+
+            
     def set_seed(self, seed):
         self.seed = seed
         random.seed(self.seed)
@@ -149,31 +185,92 @@ class Gaufs:
             # Set the evaluation metric's unlabeled data
             self.evaluation_metric.unlabeled_data=self.unlabeled_data
 
-
     def read_unlabeled_data_csv(self, filepath, recompute_default_parameters=True):
-        self.unlabeled_data = pd.read_csv(filepath)
-        self.num_vars = self.unlabeled_data.shape[1]
+        """
+        Reads unlabeled data from a CSV file.
+        Accepts CSVs with or without header.
+        Expected shape: (n_samples, n_features)
+        """
 
-        # Set the genetic algorithm parameters based on the number of variables
-        if recompute_default_parameters:
-            #number of generations and population size
-            if self.num_vars <= 100:
-                self.ngen = 150
-                self.npop = 1500
-            else:
-                self.ngen = 300
-                self.npop = 7000
-            #max number of selections for ponderation
-            self.max_number_selections_for_ponderation = 2 * self.num_vars
-    
+        # Try reading with header
+        df = pd.read_csv(filepath)
+
+        # If the first row is numeric, there was no real header
+        if df.columns.to_list()[0].startswith("Unnamed") or all(
+            c.replace('.', '', 1).isdigit() for c in df.columns
+        ):
+            df = pd.read_csv(filepath, header=None)
+
+        # Force numeric (important for ML pipelines)
+        df = df.apply(pd.to_numeric, errors="raise")
+
+        self.set_unlabeled_data(
+            df,
+            recompute_default_parameters=recompute_default_parameters
+        )
+        
     def run(self):
+
         if self.unlabeled_data.empty:
             raise ValueError("Unlabeled data is not loaded. Please load the data before running the model.")
         
-        self.run_genetic_search()
+        #delete all the content of the output directory to avoid mixing files from different runs
+        clear_directory(self.output_directory)
 
-        pass
+        # To do: analysis variables
+        return self.run_genetic_searches()
 
-    def run_genetic_search(self):
-        print("Running genetic search with seed:", self.seed)
-        pass    
+
+    def run_genetic_searches(self):
+
+        if self.num_genetic_executions < 1:
+            raise ValueError("num_genetic_executions must be at least 1.")
+        
+        if self.hof_size >= self.npop:
+            raise ValueError("hof_size must be less than population size (npop).")
+        # Generate unique seeds for each genetic algorithm execution
+        seeds_for_GA = random.sample(range(0, 10000), self.num_genetic_executions)
+
+        for s in seeds_for_GA:
+            ga_instance = GeneticSearch(
+                seed=s,
+                unlabeled_data=self.unlabeled_data,
+                ngen=self.ngen,
+                npop=self.npop,
+                cxpb=self.cxpb,
+                cxpb_rest_of_genes=self.cxpb_rest_of_genes,
+                mutpb=self.mutpb,
+                convergence_generations = self.convergence_generations,
+                hof_size=self.hof_size,
+                clustering_method=self.clustering_method,
+                evaluation_metric=self.evaluation_metric,
+                cluster_number_search_band=self.cluster_number_search_band,
+                verbose=self.verbose,
+                path_store_log=self.output_directory+f'GA_Seed_{s}/',
+                path_store_plot=self.output_directory+f'GA_Seed_{s}/'
+            )
+            hof_counter, _= ga_instance.run()
+            # Compute variable significance from Hall of Fame
+            variable_significance = compute_variable_significance(
+                num_variables=self.num_vars,
+                hof_counter=hof_counter,
+                max_number_selections_for_ponderation=self.max_number_selections_for_ponderation
+            )
+            self.variable_significances.append(variable_significance)
+
+            #Store Best chromosome and GA instance although it is not necessary for GAUFS operation
+            self.best_chromosomes.append(ga_instance.hof[0])
+            self.ga_instances.append(ga_instance)
+        
+        # Average variable significances across all genetic executions
+        self.variable_significance = np.mean(self.variable_significances, axis=0)
+        return self.variable_significance
+    
+def clear_directory(directory_path):
+    # Check if the directory exists
+    if os.path.exists(directory_path):
+        # Remove all contents of the directory
+        shutil.rmtree(directory_path)
+    
+    # Recreate the empty directory
+    os.makedirs(directory_path)

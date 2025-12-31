@@ -3,12 +3,13 @@ import random
 from concurrent.futures import ProcessPoolExecutor
 from deap import base, tools, algorithms, creator
 import matplotlib.pyplot as plt
-from utils import evaluate_ind
+from src.utils import evaluate_ind
+import os
 
 class GeneticSearch:
-    def __init__(self, unlabeled_data, ngen, npop, cxpb, cxpb_rest_of_genes, mutpb, convergence_generations, hof_size, 
-                 clustering_method, evaluation_metric, cluster_number_search_band, 
-                 max_number_selections_for_ponderation, seed=random.randint(0, 10000)):
+    def __init__(self, unlabeled_data, ngen, npop, cxpb, cxpb_rest_of_genes, mutpb, convergence_generations, 
+                 hof_size, clustering_method, evaluation_metric, cluster_number_search_band, 
+                 verbose, path_store_log=None, path_store_plot=None, seed= random.randint(0,10000)):
         self.unlabeled_data = unlabeled_data.copy()
         self.ngen = ngen
         self.npop = npop
@@ -20,15 +21,28 @@ class GeneticSearch:
         self.clustering_method = clustering_method
         self.evaluation_metric = evaluation_metric
         self.cluster_number_search_band = cluster_number_search_band
-        self.max_number_selections_for_ponderation=max_number_selections_for_ponderation
+        self.verbose = verbose
+        #If None then no log will be stored
+        self.path_store_log = path_store_log
+        self.store_log = path_store_log is not None
+        #If None no graph will be plotted
+        self.graph_evolution = path_store_plot is not None
+        self.path_store_plot = path_store_plot
         self.seed = seed
 
-        #dictionary={num_cluster:(max_fitness asociated,chromosome_where_it_was_achieved)}
-        self.num_clusters_and_its_max_fitness={}
-
+        # Hall of Fame with the best chromosomes found (num_clusters + variable_selection)
         self.hof=None
-        self.hof_counter=None
-        self.hof_weighted=None
+
+        #dictionary={num_cluster:(max_fitness asociated,chromosome_where_it_was_achieved)}
+        self.num_clusters_and_its_max_fitness=dict()
+        #dictionary={variable_selection:(maximum fitness found for that selection (regardeless of the cluster number), number of times a chromosome with this selection entered in the hof)}
+        self.hof_counter=dict()
+        self.hof_weighted=dict()
+
+        #logbook to store statistics
+        self.logbook = tools.Logbook()
+        self.logbook.header = "gen", "nevals", "avg", "std", "min", "max"
+
 
     ## Function for encoding individuals in the genetic algorithm
     def init_individual(self, container, attr_bool, data):
@@ -38,7 +52,7 @@ class GeneticSearch:
         Remaining genes: binary (each gene i represents whether the i-th variable is considered for clustering)
         """
         ## To initialize the number of clusters within the desired range
-        num_clusters_range = range(self.banda_busqueda_clusters[0],self.banda_busqueda_clusters[1])
+        num_clusters_range = range(self.cluster_number_search_band[0],self.cluster_number_search_band[1])
         k =  random.choice(num_clusters_range)
 
         # Creation of the rest of the individual with binary genes
@@ -76,7 +90,7 @@ class GeneticSearch:
             # Usual bit-flip mutation
             ind[i] = 1 - ind[i]
         else:
-            num_clusters_range = range(self.banda_busqueda_clusters[0],self.banda_busqueda_clusters[1])
+            num_clusters_range = range(self.cluster_number_search_band[0],self.cluster_number_search_band[1])
             # We choose a new number of clusters within the allowed range
             ind[0] = random.choice(num_clusters_range)
             i = random.choice(range(1, len(ind)))
@@ -97,73 +111,67 @@ class GeneticSearch:
             return list(executor.map(func, *args))
         
     def run(self):
+
+        #Check that the numer of clusters search band is valid. The number of clusters cannot be bigger than the number of data points
+        if self.cluster_number_search_band[0]>=self.cluster_number_search_band[1]:
+            raise ValueError("The cluster_number_search_band is not valid. The first element must be less than the second one.")
+        if self.cluster_number_search_band[1]>self.unlabeled_data.shape[0]:
+            raise ValueError("The cluster_number_search_band is not valid. The maximum number of clusters cannot be greater than the number of data points.")
+
         random.seed(self.seed)
-        
-        # Definicion del tipo de problema de optimizacion - maximizamos chi-cuadrado
+
+        # Definition of the optimization problem type
         creator.create("Fitness", base.Fitness, weights=(1.,))
         creator.create("Individual", list, fitness=creator.Fitness)
 
-        # Inicializacion toolbox DEAP para algoritmos geneticos
+        # Initialization of Deap's toolbox
         toolbox = base.Toolbox()
 
-        # Creacion de cada uno de los genes de un cromosoma
+        # Creation of each boolean gene of a chromosome
         toolbox.register("attr_bool", random.randint, 0, 1)
 
-        # Definicion de cada uno de los cromosomas (individuos)
-        toolbox.register("individual", lambda: self.init_individual(creator.Individual, toolbox.attr_bool, self.original_data))
+        # Definition of each chromosome (individual)
+        toolbox.register("individual", lambda: self.init_individual(creator.Individual, toolbox.attr_bool, self.unlabeled_data))
 
-        # La poblacion es una lista de individuos
+        # The population is a list of individuals
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-        # Registrar la función de evaluación, el operador de cruce, mutacion y seleccion
+        # Register the evaluation function, crossover, mutation, and selection operators
         toolbox.register("evaluate", self.evaluate_individual)
         toolbox.register("mate", self.cxUniformModified)
         toolbox.register("mutate", self.mutFlipBitModified)
         toolbox.register("select", tools.selTournament, tournsize=10)
 
-        # Evalución paralela para agilizar calculos - NO SI NO SE EJECUTA python -m scoop
+        # Parallel evaluation to speed up computations – DOES NOT WORK UNLESS python -m scoop IS USED
         toolbox.register("map", self.map_function)
 
-        # Estadisticas de fitness por generacion
+        # Fitness statistics per generation
         stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
 
-        # Se mostrara la media, desviacion media, minimo y maximo de fitness por generacion
+        # The mean, standard deviation, minimum, and maximum fitness per generation will be shown
         stats_fit.register("avg", np.mean, axis=0)
         stats_fit.register("std", np.std, axis=0)
         stats_fit.register("min", np.min, axis=0)
         stats_fit.register("max", np.max, axis=0)
 
-        # Logbook que se imprimira por pantalla con las estadisticas    
-        logbook = tools.Logbook()
-        logbook.header = "gen", "nevals", "avg", "std", "min", "max"
-
-        # init_global = time.time()
-        # Creacion una población inicial
+        # Creation of an initial population
         population = toolbox.population(self.npop)
 
-        # Lista que ira almacenando los mejores individuos generacion a generacion
+        # List that will store the best individuals generation by generation
         best_inds = []
-        # Lista que ira almacenando el fitness medio de los individuos de cada generacion
+        # List that will store the average fitness of individuals in each generation
         avg_fitness_history = []
-        #print(population) # comprobacion
 
-        # Inicializacion del HallOfFame
-        hof = tools.HallOfFame(self.hof_size)
+        # Initialization of the HallOfFame
+        self.hof = tools.HallOfFame(self.hof_size)
         
-        # Inicializacion del Diccionario contador
-        hof_counter = dict() #solo cuenta con clave las variables, no el primere gen que es el numerod e clusters {key:(fitness_maximo_encontrado_para_ese_key, veces_entradas_en_hof)}
-
-        # Evaluacion inicial de los individuos
+        # Initial evaluation of individuals
         invalid_ind = [ind for ind in population if not ind.fitness.valid]
-        # init = time.time() # para tests de tiempo
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-        # fin = time.time()
 
-        # print(f'Tiempo de evaluacion de la poblacion de la generacion {1}: {fin-init}') 
-        # init2 = time.time()
+        # update the num_clusters_and_its_max_fitness dictionary with the maximum fitness for each cluster number
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
-            #modificamos  en el diccionario cada fitness maximo para cada cluster
             val=fit[0]
             cluster_number = ind[0]
             if cluster_number in self.num_clusters_and_its_max_fitness:
@@ -172,57 +180,50 @@ class GeneticSearch:
             else:
                 self.num_clusters_and_its_max_fitness[cluster_number]= (val,ind)
 
-        # fin2 = time.time()
-        # print(f'Tiempo de actualizacion de diccionario {1}: {fin2-init2}')
-        # Se actualiza el HOF
-        hof.update(population)
+        # Update the Hall of Fame with the best individuals
+        self.hof.update(population)
 
-        # Actualizamos HOF Counter
-        # Actualizacion de HOF Counter
-        for ind in hof:
-            key = tuple(ind[1:])
-            if key in hof_counter:
-                old=hof_counter[key]
-                hof_counter[key] = (max(old[0],ind.fitness.values[0]),old[1]+1)#maximo fitness y cuento las veces que ha entrado
+        # Update the hof_counter dictionary with the best variable selections found in the hof regardeless of the cluster number
+        for ind in self.hof:
+            variables_selection = tuple(ind[1:])
+            if variables_selection in self.hof_counter:
+                old=self.hof_counter[variables_selection]
+                # we store the maximum fitness found for that variable selection and the number of times it has been present in the hof
+                self.hof_counter[variables_selection] = (max(old[0],ind.fitness.values[0]),old[1]+1)
             else :
-                hof_counter[key] = (ind.fitness.values[0],1)
+                self.hof_counter[variables_selection] = (ind.fitness.values[0],1)
         
-        # Definicion de variables para buscar convergencia en el HOF
+        # Definition of variables to search for convergence in the HoF
         hof_unchanged_count=0 
-        latest_hof_snapshot = set(tuple(ind) for ind in hof) # Realmente no necesario definirlo como set puesto que el HoF esta ordenado, pero para curarnos en salud
+        latest_hof_snapshot = set(tuple(ind) for ind in self.hof)
         
-        # Se actualizan las listas para el mejor fitness y fitness medio por generacion
-        if self.graficar_evolucion:
-            best_inds.append(hof[0]) # Inicialmente
+        # Update the lists for best individuals and average fitness per generation
+        if self.graph_evolution:
+            best_inds.append(self.hof[0]) # Inicialmente
             avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
 
-        record = stats_fit.compile(population)
-        #print(record)
-        
-        logbook.record(gen=0, nevals=len(invalid_ind), **record)
-        print(logbook.stream)
+        # Register statistics of the initial population and print them
+        record = stats_fit.compile(population)        
+        self.logbook.record(gen=0, nevals=len(invalid_ind), **record)
+        if self.verbose:
+            print(self.logbook.stream)
 
-        # fin_global = time.time()
-        # print(f'Tiempo de ejecucion de la inicializacion: {fin_global-init_global}')
-        # Se ejecuta el algoritmo evolutivo
+        # Run the evolutionary algorithm
         for gen in range(self.ngen):
-            print(f' \n \n --- Generacion {gen+1} ---')
-            #print(f'Tamanyo de la poblacion: {len(population)}')
-            # Seleccionar la proxima generacion de individuos
+
+            # Select the next generation of individuals
             offspring = toolbox.select(population, len(population) - self.hof_size)
 
-            # mutacion y reproduccion de individuos
+            # Mutation and reproduction of individuals
             offspring = algorithms.varAnd(offspring, toolbox, self.cxpb, self.mutpb)
 
-            # Evaluacion de individuos con fitness no valido
-            # Los individuos con fitness no valido son los hijos.
+            # Evaluation of the individuals with invalid fitness which are the new ones
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            # init = time.time()
-            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)            
+            fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)  
+
+            # update the num_clusters_and_its_max_fitness dictionary with the maximum fitness for each cluster number
             for ind, fit in zip(invalid_ind, fitnesses):
-                #print(fit)
                 ind.fitness.values = fit
-                #modificamos  en el diccionario cada fitness maximo para cada cluster
                 val=fit[0]
                 cluster_number = ind[0]
                 if cluster_number in self.num_clusters_and_its_max_fitness:
@@ -231,82 +232,85 @@ class GeneticSearch:
                 else:
                     self.num_clusters_and_its_max_fitness[cluster_number]= (val,ind)
 
-            # fin = time.time()
+            # Elitism: Extend the population with the individuals from the Hall of Fame
+            offspring.extend(self.hof.items)
 
-            # print(f'Tiempo de evaluacion de la poblacion de la generacion {gen+1}: {fin-init}') 
-            # Extendemos la poblacion con los individuos del hof (elitismo)
-            offspring.extend(hof.items)
+            # Update the Hall of Fame with the best individuals found so far
+            self.hof.update(offspring)
 
-            # Actualizacion del hall of fame con los mejores individuos
-            hof.update(offspring)
-
-            # Actualizacion de HOF Counter
-            for ind in hof:
-                key = tuple(ind[1:])
-                if key in hof_counter:
-                    old=hof_counter[key]
-                    hof_counter[key] = (max(old[0],ind.fitness.values[0]),old[1]+1)#maximo fitness y cuento las veces que ha entrado
+            # Update the hof_counter dictionary with the best variable selections found in the hof regardeless of the cluster number
+            for ind in self.hof:
+                variables_selection = tuple(ind[1:])
+                if variables_selection in self.hof_counter:
+                    old=self.hof_counter[variables_selection]
+                    self.hof_counter[variables_selection] = (max(old[0],ind.fitness.values[0]),old[1]+1)#maximo fitness y cuento las veces que ha entrado
                 else :
-                    hof_counter[key] = (ind.fitness.values[0],1)
-            
-            #ya no se borran hasta el final
-            # inds_to_delete = [key for key in hof_counter if list(key) not in [indivi[1:] for indivi in hof]]
-            # for key in inds_to_delete:
-            #     del hof_counter[key]
+                    self.hof_counter[variables_selection] = (ind.fitness.values[0],1)
 
-            #Muestro el mejor individuo para cada generacion 
-            print(f'Mejor individuo de la generacion {gen+1} es {hof[0]} con {hof[0].fitness.values[0]}')
+            # If we are in the last generation, store the individuals and their fitness values
+            if(gen==self.ngen-1):
+                self.last_gen={tuple(ind):ind.fitness.values[0] for ind in offspring}
 
-            if(gen==self.ngen-1):#si es la ultima gen la guardamos
-                self.ultima_gen={tuple(ind):ind.fitness.values[0] for ind in offspring}
-
-            # Reemplazar la poblacion con la nueva generacion
+            # Replace the current population with the offspring
             population[:] = offspring
 
-            # Actualizamos la lista de mejores individuos y fitness medio por poblacion
-            if self.graficar_evolucion:
-                best_inds.append(hof[0])
+            # Update the lists for best individuals and average fitness per generation
+            if self.graph_evolution:
+                best_inds.append(self.hof[0])
                 avg_fitness_history.append(np.mean([ind.fitness.values[0] for ind in population]))
 
             record = stats_fit.compile(population)
-            #print(record)
-        
-            logbook.record(gen=gen+1, nevals=len(invalid_ind), **record)
-            print(logbook.stream)
+            self.logbook.record(gen=gen+1, nevals=len(invalid_ind), **record)
+
+            # Output and store of statistics
+            if self.verbose:
+                print(self.logbook.stream)
+            if self.store_log:
+                self.save_log_to_file(early_stopped=False, current_gen=self.ngen-1)
             
-            current_hof_snapshot = set(tuple(ind) for ind in hof)
+            #if the hof has not changed in the last convergence_generations generations, we stop the algorithm
+            current_hof_snapshot = set(tuple(ind) for ind in self.hof)
             if current_hof_snapshot == latest_hof_snapshot:
                 hof_unchanged_count += 1
             else:
                 hof_unchanged_count = 0
                 latest_hof_snapshot = current_hof_snapshot
-            
             if hof_unchanged_count >= self.convergence_generations:
-                print(f'Early Stopping due to Hall Of Fame not changing in {gen+1} generations')
-                self.ultima_gen={tuple(ind):ind.fitness.values[0] for ind in offspring}
+                if self.verbose:
+                    print(f'Early Stopping due to Hall Of Fame not changing in {gen+1} generations')
+                self.last_gen={tuple(ind):ind.fitness.values[0] for ind in offspring}
+                if self.store_log:
+                    self.save_log_to_file(early_stopped=True, current_gen=gen)
                 break
 
-        # Evolucion de fitness a lo largo de las generaciones
-        if self.graficar_evolucion:
-            fitness_vals = []
-            for _, ind in enumerate(best_inds, start=1):
-                fitness_vals.append(ind.fitness.values[0])
+        # Plot the evolution of the best and average fitness score
+        if self.graph_evolution:
+            self.save_graph_evolution(best_inds, avg_fitness_history)
 
-            num_generations = len(fitness_vals)  
-            plt.figure(figsize=(10, 5))
-            plt.plot(range(1, num_generations + 1), fitness_vals, marker='o', linestyle='-', color='b', label='Fitness mejor individuo')
-            plt.plot(range(1, num_generations + 1), avg_fitness_history[:num_generations], marker='x', linestyle='--', color='r', label='Fitness medio')
-            plt.title('Fitness del Mejor Individuo y Promedio por Generación')
-            plt.xlabel('Número de Generación')
-            plt.ylabel('Fitness')
-            plt.legend()
-            plt.grid(True)
-            plt.show()
-        self.hof=hof
-        self.hof_counter=hof_counter
-        return hof, hof_counter,self.num_clusters_and_its_max_fitness,self.ultima_gen
+        return self.hof_counter, self.num_clusters_and_its_max_fitness
     
+    def save_graph_evolution(self, best_inds, avg_fitness_history):
+        fitness_vals = []
+        for _, ind in enumerate(best_inds, start=1):
+            fitness_vals.append(ind.fitness.values[0])
+        num_generations = len(fitness_vals)  
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(1, num_generations + 1), fitness_vals, marker='o', linestyle='-', color='b', label='Fitness of the best individual')
+        plt.plot(range(1, num_generations + 1), avg_fitness_history[:num_generations], marker='x', linestyle='--', color='r', label='Average fitness of the population')
+        plt.title('Fitness Evolution Over Generations')
+        plt.xlabel('Number of Generations')
+        plt.ylabel('Fitness')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(self.path_store_plot+"evolution_of_the_genetic_algorithm.png", dpi=300, bbox_inches="tight")
+        plt.close()
 
-    def get_hof_ponderado(self):#este asume que no hay variables de control y lo hace con el sistema contador. Es el que hay que usar a fecha 21/11/2024
-        self.hof_weighted=variable_significance_solo_dado_contador(len(self.hof[0])-1, self.hof_counter,self.max_number_selections_for_ponderation)
-        return self.hof_weighted
+    def save_log_to_file(self, current_gen, early_stopped):
+        """Save the logbook to a file."""
+        # Create directory if it doesn't exist
+        os.makedirs(self.path_store_log, exist_ok=True)
+        
+        with open(self.path_store_log + "genetic_algorithm_log.txt", 'w') as f:
+            if early_stopped:
+                f.write(f"Early stopping at generation {current_gen + 1}\n\n")
+            f.write(str(self.logbook))
