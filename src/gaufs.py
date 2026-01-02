@@ -192,17 +192,7 @@ class Gaufs:
         Expected shape: (n_samples, n_features)
         """
 
-        # Try reading with header
-        df = pd.read_csv(filepath)
-
-        # If the first row is numeric, there was no real header
-        if df.columns.to_list()[0].startswith("Unnamed") or all(
-            c.replace('.', '', 1).isdigit() for c in df.columns
-        ):
-            df = pd.read_csv(filepath, header=None)
-
-        # Force numeric (important for ML pipelines)
-        df = df.apply(pd.to_numeric, errors="raise")
+        df=read_unlabeled_data_csv(filepath)
 
         self.set_unlabeled_data(
             df,

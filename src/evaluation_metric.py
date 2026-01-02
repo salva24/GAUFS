@@ -145,7 +145,7 @@ class SSEScoreForMaximization(EvaluationMetric):
 
 # External metrics (need true_labels)
 
-class MutualInformationScore(EvaluationMetric):
+class AdjustedMutualInformationScore(EvaluationMetric):
     def compute(self, assigned_clusters):
         ## AMI: Function that measures how well the optimal assignment corresponds to the one returned by the algorithm.
         # Based on entropy. Normalized and symmetric.

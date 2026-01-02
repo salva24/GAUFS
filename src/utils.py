@@ -71,3 +71,50 @@ def compute_variable_significance(num_variables, hof_counter, max_number_selecti
         for j,s in enumerate(scores_normalized):
             res[i] += s * selections[j][0][i]
     return res
+
+@staticmethod
+def read_unlabeled_data_csv(filepath):
+    """
+    Reads unlabeled data from a CSV file.
+    Accepts CSVs with or without header.
+    Expected shape: (n_samples, n_features)
+    """
+    # Try reading with header
+    df = pd.read_csv(filepath)
+
+    # If the first row is numeric, there was no real header
+    if df.columns.to_list()[0].startswith("Unnamed") or all(
+        c.replace('.', '', 1).isdigit() for c in df.columns
+    ):
+        df = pd.read_csv(filepath, header=None)
+
+    # Force numeric (important for ML pipelines)
+    df = df.apply(pd.to_numeric, errors="raise")
+    return df
+
+@staticmethod
+def read_labeled_data_csv(filepath):
+    """
+    Accepts CSV with or without header.
+    The fotmat of the labeled data CSV is:
+    - First n-1 columns: features
+    - Last column: true labels
+    Returns:
+    - unlabeled_data: pd.DataFrame of shape (n_samples, n_features)
+    - true_labels: np.array of shape (n_samples,)
+    """
+    df = pd.read_csv(filepath)
+
+    # If the first row is numeric, there was no real header
+    if df.columns.to_list()[0].startswith("Unnamed") or all(
+        c.replace('.', '', 1).isdigit() for c in df.columns
+    ):
+        df = pd.read_csv(filepath, header=None)
+
+    # Force numeric (important for ML pipelines)
+    df = df.apply(pd.to_numeric, errors="raise")
+
+    unlabeled_data = df.iloc[:, :-1]
+    true_labels = df.iloc[:, -1].values
+
+    return unlabeled_data, true_labels
