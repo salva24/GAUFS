@@ -11,6 +11,7 @@ class GeneticSearch:
                  hof_size, clustering_method, evaluation_metric, cluster_number_search_band, 
                  verbose, path_store_log=None, path_store_plot=None, seed= random.randint(0,10000)):
         self.unlabeled_data = unlabeled_data.copy()
+        self.num_var=unlabeled_data.shape[1]
         self.ngen = ngen
         self.npop = npop
         self.cxpb = cxpb
@@ -56,7 +57,7 @@ class GeneticSearch:
         k =  random.choice(num_clusters_range)
 
         # Creation of the rest of the individual with binary genes
-        individual = container([k]+[attr_bool() for _ in range(data.shape[1]-1)])
+        individual = container([k]+[attr_bool() for _ in range(self.num_var)])
         return individual
 
     ### Adapted definition of genetic operators

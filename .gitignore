@@ -1,8 +1,6 @@
 out/
 datasets/
 
-
-
 *.csv
 env-cluster-searcher/
 bibliografia/

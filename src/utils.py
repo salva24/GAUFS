@@ -55,17 +55,19 @@ def compute_variable_significance(num_variables, hof_counter, max_number_selecti
                             is the number of times a chromosome which includes that selection entered the Hall of Fame.
         max_number_selections_for_ponderation (int): Maximum number of individuals to consider for ponderation.
     '''
-    chromosomes=sorted(hof_counter.items(), key=lambda item: item[1][0], reverse=True)[:max_number_selections_for_ponderation]
+    selections=sorted(hof_counter.items(), key=lambda item: item[1][0], reverse=True)[:max_number_selections_for_ponderation]
     scores=[]
-    suma=0
-    for it in chromosomes:
+    total=0
+    for it in selections:
+        # the score of the selection if the maximun fitness achieved by that selection multiplied by the number of times it was selected in the HoF
         score=it[1][0]*it[1][1]
         scores.append(score)
-        suma+=score
+        total+=score
 
-    scores_normalized=[x/suma for x in scores]
-    res = [0 for _ in range(num_variables)]
+    # normalize scores so that they sum to 1
+    scores_normalized=[x/total for x in scores]
+    res = [0]*num_variables
     for i in range(num_variables):
         for j,s in enumerate(scores_normalized):
-            res[i] += s * chromosomes[j][0][i]
+            res[i] += s * selections[j][0][i]
     return res
