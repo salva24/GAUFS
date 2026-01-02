@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import copy
+import os
+import shutil
+import warnings
 
 # Contingency table
 @staticmethod
@@ -12,6 +15,17 @@ def get_cont_table(c1, c2, round=True):
 # Evaluate an individual (cluster number and feature selection)
 @staticmethod
 def evaluate_ind(unlabeled_data, cluster_number, variables, clustering_method, evaluation_metric):
+    """
+    Evaluates an individual in the genetic algorithm.
+    Args:
+        unlabeled_data (pd.DataFrame): The unlabeled data to cluster.
+        cluster_number (int): The number of clusters to form.
+        variables (list): A binary list indicating selected variables (1 for selected, 0 for not).
+        clustering_method (object): An instance of a clustering method with a 'run' method.
+        evaluation_metric (object): An instance of an evaluation metric with a 'compute' method.
+    Returns:
+        float: The evaluation score of the clustering result.
+    """
     try:
         # if no variables are selected, return a very low fitness
         if np.all(np.array(variables) == 0):
@@ -71,6 +85,61 @@ def compute_variable_significance(num_variables, hof_counter, max_number_selecti
         for j,s in enumerate(scores_normalized):
             res[i] += s * selections[j][0][i]
     return res
+
+@staticmethod
+def get_dictionary_num_clusters_fitness(unlabeled_data, variable_selection,cluster_number_search_band,clustering_method, evaluation_metric):
+    """
+    Computes a dictionary mapping the number of clusters whithin the cluster_number_search_band to their corresponding fitness scores given the fixed variable selection binary_variable_selection.
+    """
+    dicc_clusters_fitness = {}
+    for k in cluster_number_search_band:
+        dicc_clusters_fitness[k] =  evaluate_ind(unlabeled_data=unlabeled_data, cluster_number=k, variables=variable_selection, clustering_method=clustering_method, evaluation_metric=evaluation_metric)
+    return dicc_clusters_fitness
+
+#the overhead of not computing the maximum in get_dictionary_num_clusters_fitness is negligible compared to the clustering computations
+@staticmethod
+def get_num_clusters_with_best_fitness(dicc_clusters_fit):
+    """
+    Given a dictionary mapping number of clusters to fitness scores, returns the number of clusters with the best fitness.
+    In case of tie, returns the highest number of clusters among those with the best fitness.
+    """
+    num_clusters_for_maximum_fitness=None
+    max_fitness=None
+    for key in dicc_clusters_fit.keys():
+        #In case of tie we select the highest number of clusters
+        if(max_fitness==None or max_fitness<dicc_clusters_fit[key] or (max_fitness==dicc_clusters_fit[key] and num_clusters_for_maximum_fitness<key)):
+            max_fitness=dicc_clusters_fit[key]
+            num_clusters_for_maximum_fitness=key
+    return num_clusters_for_maximum_fitness, max_fitness
+
+@staticmethod
+def clear_directory(directory_path):
+    # Check if the directory exists
+    if os.path.exists(directory_path):
+        # Remove all contents of the directory
+        shutil.rmtree(directory_path)
+    
+    # Recreate the empty directory
+    os.makedirs(directory_path)
+
+@staticmethod
+def get_variables_over_threshold(variables_weights,threshold):
+    return [1 if w>=threshold else 0 for w in variables_weights]
+
+@staticmethod
+def min_max_normalize_dictionary(dictionary):
+    """
+    Returns a new dictionary with the values min-max normalized to the range [0, 1].
+    """
+    values=list(dictionary.values())
+    max_value=max(values)
+    min_value=min(values)
+    # This should not happen, but just in case to avoid division by zero
+    if max_value==min_value:
+        warnings.warn("Trying to MinMax normalize a dictionary whose valoes are all the same. Returning zeros for all keys.")
+        return {k:0.0 for k in dictionary.keys()}
+
+    return {k:(v-min_value)/(max_value-min_value) for k,v in dictionary.items()}
 
 @staticmethod
 def read_unlabeled_data_csv(filepath):

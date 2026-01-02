@@ -42,7 +42,7 @@ class GeneticSearch:
 
         #logbook to store statistics
         self.logbook = tools.Logbook()
-        self.logbook.header = "gen", "nevals", "avg", "std", "min", "max"
+        self.logbook.header = "gen", "nevals", "avg", "std", "min", "max"   
 
 
     ## Function for encoding individuals in the genetic algorithm
@@ -108,18 +108,25 @@ class GeneticSearch:
 
 
     def map_function(self, func, *args):
+        #create as many workers as cores available.
+        # The overhead of creating a pool each time is very low.
         with ProcessPoolExecutor() as executor:
             return list(executor.map(func, *args))
         
     def run(self):
-
-        #Check that the numer of clusters search band is valid. The number of clusters cannot be bigger than the number of data points
+        # Check that the number of clusters search band is valid
         if self.cluster_number_search_band[0]>=self.cluster_number_search_band[1]:
             raise ValueError("The cluster_number_search_band is not valid. The first element must be less than the second one.")
         if self.cluster_number_search_band[1]>self.unlabeled_data.shape[0]:
             raise ValueError("The cluster_number_search_band is not valid. The maximum number of clusters cannot be greater than the number of data points.")
 
         random.seed(self.seed)
+
+        # Delete existing classes if they exist to avoid RuntimeWarning
+        if hasattr(creator, "Fitness"):
+            del creator.Fitness
+        if hasattr(creator, "Individual"):
+            del creator.Individual
 
         # Definition of the optimization problem type
         creator.create("Fitness", base.Fitness, weights=(1.,))
@@ -143,7 +150,7 @@ class GeneticSearch:
         toolbox.register("mutate", self.mutFlipBitModified)
         toolbox.register("select", tools.selTournament, tournsize=10)
 
-        # Parallel evaluation to speed up computations – DOES NOT WORK UNLESS python -m scoop IS USED
+        # Parallel evaluation to speed up computations
         toolbox.register("map", self.map_function)
 
         # Fitness statistics per generation
