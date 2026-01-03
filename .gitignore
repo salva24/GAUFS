@@ -199,3 +199,5 @@ repos.ipynb
 tabla.csv
 
 results_old/*
+
+results_cluster_number_before_hand/*
