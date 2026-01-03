@@ -30,6 +30,7 @@ class Gaufs:
         verbose=True,
         generate_genetics_log_files=True,
         graph_evolution=True,
+        generate_files_with_results=True,
         output_directory="./out/"
     ):
         """
@@ -59,7 +60,7 @@ class Gaufs:
                 Only used if hof_size is None.
             clustering_method: Clustering algorithm instance. Default: HierarchicalExperiment(linkage='ward'). Must implement clustering interface.
             evaluation_metric: Metric for evaluating clustering quality. Default: SilhouetteScore(). Must implement evaluation interface.
-            cluster_number_search_band (tuple): Range of cluster numbers to explore as (min, max_exclusive). Default: (2, 26). Range: (>= 2, <= num_samples).
+            cluster_number_search_band (tuple): Range of cluster numbers to explore as (min_inclusive, max_exclusive). Default: (2, 26). Range: (>= 2, <= num_samples).
             fitness_weight_over_threshold (float): Weight for fitness vs. threshold in variable weight analysis. Default: 0.5 i.e. both values are averaged. Range: [0.0, 1.0].
             exponential_decay_factor (float): Exponential decay factor for the automatic solution selector in the formula \frac{\delta_i}{1 + \left( \frac{N}{e^{exponential_decay_factor*i}} \right)} If 0.0 there is no decay. Default: 1.0. Range: >= 0.0.
             max_number_selections_for_ponderation (int or None): Maximum selections from Hall of Fame for weight computation. Default: 2 * num_vars. Range: >= 1 or None.
@@ -67,6 +68,7 @@ class Gaufs:
             generate_genetics_log_files (bool): Whether to generate a log file with Genetic Algorithm execution details. Default: True.
             graph_evolution (bool): Whether to generate a graph of the best and average fitness through the Genetica Algorithm's evolution. Default: True.
             output_directory (str): Path to store generated files including the plots. Default: "../out/".
+            generate_files_with_results (bool): Whether to generate files with plots and results. Default: True.
         """
         # Random seed for reproducibility (randomly generated integer between 0 and 10000)
         self.seed = seed
@@ -135,6 +137,9 @@ class Gaufs:
 
         # Flag to generate a log file with Genetic Algorithm execution details
         self.generate_genetics_log_files = generate_genetics_log_files
+
+        # Flag to generate files with plots and results
+        self.generate_files_with_results = generate_files_with_results
 
         #Directory to store generated plots, logs and other files
         self.output_directory = output_directory
@@ -234,8 +239,37 @@ class Gaufs:
         self.run_genetic_searches()
 
         #analyze the variable weights to get the optimal variable selection and number of clusters
-        return self.analyze_variable_weights()
+        self.analyze_variable_weights()
 
+        if self.verbose:
+            print(f"Optimal variable selection (1=selected, 0=not selected): {self.optimal_variable_selection_and_num_of_clusters[0]}\nwith the optimal number of clusters: {self.optimal_variable_selection_and_num_of_clusters[1]}")
+            print("Fitness of optimal variable selection and number of clusters: ", self.fitness_of_optimal_variable_selection_and_num_of_clusters)
+        
+        if self.generate_files_with_results:
+            # Save optimal variable selection and number of clusters to a text file
+            directory= self.output_directory+"results/"
+            os.makedirs(directory, exist_ok=True)
+            output_path_txt=directory+'optimal_variable_selection_and_number_of_clusters.txt'
+            
+            df_optimal_selection = pd.DataFrame({
+                'Variable': self.unlabeled_data.columns,
+                'Selected': self.optimal_variable_selection_and_num_of_clusters[0]
+            })
+
+            output_path_csv = os.path.join(directory, 'optimal_variable_selection.csv')
+            df_optimal_selection.to_csv(output_path_csv, index=False)
+
+            # Also save summary to text file
+            with open(output_path_txt, 'w') as f:
+                f.write(f"Optimal number of clusters: {self.optimal_variable_selection_and_num_of_clusters[1]}\n")
+                f.write(f"Fitness: {self.fitness_of_optimal_variable_selection_and_num_of_clusters}\n\n")
+                f.write("Selected Variables:\n")
+                f.write(df_optimal_selection[df_optimal_selection['Selected'] == 1]['Variable'].to_string(index=False))
+
+            if self.verbose:
+                print(f"Optimal variable selection and number of clusters saved to {output_path_txt}")
+
+        return self.optimal_variable_selection_and_num_of_clusters, self.fitness_of_optimal_variable_selection_and_num_of_clusters
 
     def run_genetic_searches(self):
 
@@ -283,6 +317,23 @@ class Gaufs:
         
         # Average variable significances across all genetic executions
         self.variable_significance = np.mean(self.variable_significances, axis=0)
+        if self.verbose:
+            print("Genetic Algorithm executions completed.")
+            print("The variable weights (significances) are: ", self.variable_significance)
+
+        if self.generate_files_with_results:
+            # Save variable significances to a CSV file
+            directory= self.output_directory+"results/"
+            os.makedirs(directory, exist_ok=True)
+            df_var_significance = pd.DataFrame({
+                'Variable': self.unlabeled_data.columns,
+                'Significance': self.variable_significance
+            })
+            output_path_csv=directory+'variable_significances.csv'
+            df_var_significance.to_csv(output_path_csv, index=False)
+            if self.verbose:
+                print(f"Variable significances saved to {output_path_csv}")
+
         return self.variable_significance
         
     def analyze_variable_weights(self):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
@@ -331,7 +382,6 @@ class Gaufs:
 
             possible_variable_selections.append(selection)
             dicc_clusters_fit=get_dictionary_num_clusters_fitness(unlabeled_data=self.unlabeled_data,variable_selection=selection,clustering_method=self.clustering_method,evaluation_metric=self.evaluation_metric,cluster_number_search_band=self.cluster_number_search_band)
-            
             num_clusters_for_maximum_fitness,max_fitness=get_num_clusters_with_best_fitness(dicc_clusters_fit)
                 
             self.dicc_selection_num_clusters[tuple(selection)]=num_clusters_for_maximum_fitness

@@ -49,7 +49,7 @@ class GeneticSearch:
     def init_individual(self, container, attr_bool, data):
         """
         For initializing individuals in the genetic algorithm.
-        First gene: number of clusters (random number within cluster_number_search_band)
+        First gene: number of clusters (random number within cluster_number_search_band (min_inclusive, max_exclusive))
         Remaining genes: binary (each gene i represents whether the i-th variable is considered for clustering)
         """
         ## To initialize the number of clusters within the desired range
@@ -294,6 +294,10 @@ class GeneticSearch:
         # Plot the evolution of the best and average fitness score
         if self.graph_evolution:
             self.save_graph_evolution(best_inds, avg_fitness_history)
+        if self.store_log:
+            with open(self.path_store_log + "hall_of_fame_counter.txt", 'w') as f:
+                for key, value in self.hof_counter.items():
+                    f.write(f'Selection: {key}, (Max Fitness: {value[0]}, Times in HoF: {value[1]})\n')
 
         return self.hof_counter, self.num_clusters_and_its_max_fitness
     

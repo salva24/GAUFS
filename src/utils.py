@@ -89,10 +89,10 @@ def compute_variable_significance(num_variables, hof_counter, max_number_selecti
 @staticmethod
 def get_dictionary_num_clusters_fitness(unlabeled_data, variable_selection,cluster_number_search_band,clustering_method, evaluation_metric):
     """
-    Computes a dictionary mapping the number of clusters whithin the cluster_number_search_band to their corresponding fitness scores given the fixed variable selection binary_variable_selection.
+    Computes a dictionary mapping the number of clusters whithin the cluster_number_search_band (min_inclusive, max_exclusive) to their corresponding fitness scores given the fixed variable selection binary_variable_selection.
     """
     dicc_clusters_fitness = {}
-    for k in cluster_number_search_band:
+    for k in range(cluster_number_search_band[0], cluster_number_search_band[1]):
         dicc_clusters_fitness[k] =  evaluate_ind(unlabeled_data=unlabeled_data, cluster_number=k, variables=variable_selection, clustering_method=clustering_method, evaluation_metric=evaluation_metric)
     return dicc_clusters_fitness
 
@@ -134,9 +134,9 @@ def min_max_normalize_dictionary(dictionary):
     values=list(dictionary.values())
     max_value=max(values)
     min_value=min(values)
-    # This should not happen, but just in case to avoid division by zero
+    # To avoid division by zero
     if max_value==min_value:
-        warnings.warn("Trying to MinMax normalize a dictionary whose valoes are all the same. Returning zeros for all keys.")
+        warnings.warn("Trying to MinMax normalize a dictionary whose values are all the same. Returning zeros for all keys.")
         return {k:0.0 for k in dictionary.keys()}
 
     return {k:(v-min_value)/(max_value-min_value) for k,v in dictionary.items()}
