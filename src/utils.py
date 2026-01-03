@@ -1,9 +1,9 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 import copy
 import os
 import shutil
-import warnings
 
 # Contingency table
 @staticmethod
@@ -87,6 +87,35 @@ def compute_variable_significance(num_variables, hof_counter, max_number_selecti
     return res
 
 @staticmethod
+def clear_directory(directory_path):
+    # Check if the directory exists
+    if os.path.exists(directory_path):
+        # Remove all contents of the directory
+        shutil.rmtree(directory_path)
+    
+    # Recreate the empty directory
+    os.makedirs(directory_path)
+
+@staticmethod
+def convert_to_serializable(obj):
+    """
+    Function to convert numpy arrays to lists
+    """
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_to_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_serializable(item) for item in obj]
+    elif isinstance(obj, (np.integer, np.floating)):
+        return obj.item()
+    return obj
+
+@staticmethod
+def get_variables_over_threshold(variables_weights,threshold):
+    return [1 if w>=threshold else 0 for w in variables_weights]
+
+@staticmethod
 def get_dictionary_num_clusters_fitness(unlabeled_data, variable_selection,cluster_number_search_band,clustering_method, evaluation_metric):
     """
     Computes a dictionary mapping the number of clusters whithin the cluster_number_search_band (min_inclusive, max_exclusive) to their corresponding fitness scores given the fixed variable selection binary_variable_selection.
@@ -113,20 +142,6 @@ def get_num_clusters_with_best_fitness(dicc_clusters_fit):
     return num_clusters_for_maximum_fitness, max_fitness
 
 @staticmethod
-def clear_directory(directory_path):
-    # Check if the directory exists
-    if os.path.exists(directory_path):
-        # Remove all contents of the directory
-        shutil.rmtree(directory_path)
-    
-    # Recreate the empty directory
-    os.makedirs(directory_path)
-
-@staticmethod
-def get_variables_over_threshold(variables_weights,threshold):
-    return [1 if w>=threshold else 0 for w in variables_weights]
-
-@staticmethod
 def min_max_normalize_dictionary(dictionary):
     """
     Returns a new dictionary with the values min-max normalized to the range [0, 1].
@@ -134,9 +149,8 @@ def min_max_normalize_dictionary(dictionary):
     values=list(dictionary.values())
     max_value=max(values)
     min_value=min(values)
-    # To avoid division by zero
+    # In case all values are the same, return a dictionary with all values set to 0.0
     if max_value==min_value:
-        warnings.warn("Trying to MinMax normalize a dictionary whose values are all the same. Returning zeros for all keys.")
         return {k:0.0 for k in dictionary.keys()}
 
     return {k:(v-min_value)/(max_value-min_value) for k,v in dictionary.items()}

@@ -6,6 +6,9 @@ from src.genetic_search import GeneticSearch
 from src.utils import *
 import os
 import warnings
+import json
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class Gaufs:
     def __init__(
@@ -177,13 +180,36 @@ class Gaufs:
         #dictionary={variable_selection:best_fitness}
         self.dicc_selection_fitness={}
 
+        #Other dictionaries for analysis and plotting
+        #dictionary={num_variables_selected:[variable_selection_with_that_num_variables]}
+        self.dicc_num_var_selection_with_that_num_variables={}
+        #\Psi_{num\_clusters}={num_variables_selected:cluster_number_with_best_fitness}
+        self.dicc_num_var_selected_num_clusters={}
+        #\tilde{\Psi}_{fitness}={num_variables_selected:best_fitness}
+        self.dicc_num_var_selected_fitness={}
+        #\tilde{\Psi}_{weight\_threshold}={num_variables_selected:threshold_for_selection}
+        self.dicc_num_var_threshold={}
+        # MinMax(\tilde{\Psi}_{fitness})
+        self.dicc_num_var_selected_fitness_min_max_normalized=None
+        # MinMax(\tilde{\Psi}_{weight\_threshold})
+        self.dicc_num_var_threshold_min_max_normalized=None
+        #\Phi_{average}={num_variables_selected:average_between_fitness_and_threshold}
+        # the average is weighted by self.fitness_weight_over_threshold
+        # \Phi_{average}= self.fitness_weight_over_threshold*MinMax(\tilde{\Psi}_{fitness}) + (1-self.fitness_weight_over_threshold)*MinMax(\tilde{\Psi}_{weight_threshold})
+        self.dicc_num_var_selected_importance=None
+        #\delta={num_variables_selected:importance_difference_with_next_selection}
+        self.dictionary_deltas_importance_diferences={}
+        #\tilde{\delta} = {num_variables_selected:importance_difference_with_next_selection_with_exponential_decay}
+        # \tilde{\delta} = \frac{\delta_i}{1 + \left( \frac{N}{e^{self.exponential_decay_factor*i}} \right)}
+        self.dictionary_deltas_importance_diferences_with_exponential_decay=None
+        #this dictionary is only for the 3D plot {num_selected_variables:{num_clusters:fitness}}
+        self.dicc_num_var_all_clusters_fitness = {}
+
         # Optimal variable selection and number of clusters after analysis (variable selection as binary list, num_clusters)
         self.optimal_variable_selection_and_num_of_clusters = None
         #Fitness value associated to the optimal variable selection and number of clusters
         self.fitness_of_optimal_variable_selection_and_num_of_clusters = None
 
-
-            
     def set_seed(self, seed):
         self.seed = seed
         random.seed(self.seed)
@@ -266,7 +292,29 @@ class Gaufs:
                 f.write("Selected Variables:\n")
                 f.write(df_optimal_selection[df_optimal_selection['Selected'] == 1]['Variable'].to_string(index=False))
 
+            # Save plots of dictionaries
+            self.plot_dictionaries()
+
+            # 3D plot of number of variables, number of clusters and fitness
+            self.plot_num_variables_and_clusters_3D()
+
+            # Collect dictionaries
+            data_dictionaries = {
+                'dicc_num_var_selection_with_that_num_variables': convert_to_serializable(self.dicc_num_var_selection_with_that_num_variables),
+                'dicc_num_var_selected_num_clusters': convert_to_serializable(self.dicc_num_var_selected_num_clusters),
+                'dicc_num_var_selected_fitness': convert_to_serializable(self.dicc_num_var_selected_fitness),
+                'dicc_num_var_threshold': convert_to_serializable(self.dicc_num_var_threshold),
+                'dicc_num_var_selected_importance': convert_to_serializable(self.dicc_num_var_selected_importance),
+                'dictionary_deltas_importance_diferences_with_exponential_decay': convert_to_serializable(self.dictionary_deltas_importance_diferences_with_exponential_decay)
+            }
+
+            # Save to JSON file
+            out_path_dictionaries = directory + 'dictionaries_variables_weight_analysis.json'
+            with open(out_path_dictionaries, 'w') as f:
+                json.dump(data_dictionaries, f, indent=4)
+
             if self.verbose:
+                print(f"Dictionaries from variable weight analysis saved to {out_path_dictionaries}")
                 print(f"Optimal variable selection and number of clusters saved to {output_path_txt}")
 
         return self.optimal_variable_selection_and_num_of_clusters, self.fitness_of_optimal_variable_selection_and_num_of_clusters
@@ -336,62 +384,38 @@ class Gaufs:
 
         return self.variable_significance
         
-    def analyze_variable_weights(self):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
+    def analyze_variable_weights(self):
         
         thresholds=sorted(self.variable_significance,reverse=True)
         
         #list of the considered selections  
         possible_variable_selections=[]
 
-        #dictionary={num_variables_selected:[variable_selections_with_that_num_variables]}
-        dicc_num_var_selection_with_that_num_variables={}
-
-        #\Psi_{num\_clusters}={num_variables_selected:cluster_number_with_best_fitness}
-        dicc_num_var_selected_num_clusters={}
-
-        #\tilde{\Psi}_{fitness}={num_variables_selected:best_fitness}
-        dicc_num_var_selected_fitness={}
-        #\tilde{\Psi}_{weight\_threshold}={num_variables_selected:threshold_for_selection}
-        dicc_num_var_threshold={}
-        # MinMax(\tilde{\Psi}_{fitness})
-        dicc_num_var_selected_fitness_min_max_normalized=None
-        # MinMax(\tilde{\Psi}_{weight\_threshold})
-        dicc_num_var_threshold_min_max_normalized=None
-
-        #\Phi_{average}={num_variables_selected:average_between_fitness_and_threshold}
-        # the average is weighted by self.fitness_weight_over_threshold
-        # \Phi_{average}= self.fitness_weight_over_threshold*MinMax(\tilde{\Psi}_{fitness}) + (1-self.fitness_weight_over_threshold)*MinMax(\tilde{\Psi}_{weight_threshold})
-        dicc_num_var_selected_importance=None
-
-        #\delta={num_variables_selected:importance_difference_with_next_selection}
-        dictionary_deltas={}
-
-        #\tilde{\delta} = {num_variables_selected:importance_difference_with_next_selection_with_exponential_decay}
-        # \tilde{\delta} = \frac{\delta_i}{1 + \left( \frac{N}{e^{self.exponential_decay_factor*i}} \right)}
-        dictionary_deltas_with_exponential_decay=None
-
         #Create the directory
         directory= self.output_directory+"results/"
         os.makedirs(directory, exist_ok=True)
 
-    
-
         #For each threshold get the selection and analyze it
         for threshold in thresholds:
             selection=get_variables_over_threshold(self.variable_significance,threshold)
+            number_of_selected_variables=sum(selection)
 
             possible_variable_selections.append(selection)
             dicc_clusters_fit=get_dictionary_num_clusters_fitness(unlabeled_data=self.unlabeled_data,variable_selection=selection,clustering_method=self.clustering_method,evaluation_metric=self.evaluation_metric,cluster_number_search_band=self.cluster_number_search_band)
+            
             num_clusters_for_maximum_fitness,max_fitness=get_num_clusters_with_best_fitness(dicc_clusters_fit)
-                
+
             self.dicc_selection_num_clusters[tuple(selection)]=num_clusters_for_maximum_fitness
-            dicc_num_var_selected_num_clusters[sum(selection)]=num_clusters_for_maximum_fitness
-            dicc_num_var_threshold[sum(selection)]=threshold
+            self.dicc_num_var_selected_num_clusters[number_of_selected_variables]=num_clusters_for_maximum_fitness
+            self.dicc_num_var_threshold[number_of_selected_variables]=threshold
 
             self.dicc_selection_fitness[tuple(selection)]=max_fitness
-            dicc_num_var_selected_fitness[sum(selection)]= max_fitness
+            self.dicc_num_var_selected_fitness[number_of_selected_variables]= max_fitness
 
-            dicc_num_var_selection_with_that_num_variables[sum(selection)]=selection
+            self.dicc_num_var_selection_with_that_num_variables[number_of_selected_variables]=selection
+
+            #This dictionary is only ofr the 3D plot
+            self.dicc_num_var_all_clusters_fitness[number_of_selected_variables] = dicc_clusters_fit
 
 
         #there is only one selecction possible: selecting all variables
@@ -406,363 +430,255 @@ class Gaufs:
             self.optimal_variable_selection_and_num_of_clusters = possible_variable_selections[0], list(self.dicc_selection_num_clusters.values())[0]
             return self.optimal_variable_selection_and_num_of_clusters, self.fitness_of_optimal_variable_selection_and_num_of_clusters
 
-
-
-        # #######################################make the plots and store results
-
-        # #Crear grafica 3D : variables,clusters,silhouette
-        # dicc_numvars_selections = {}
-        # key_var_orig_selected = 0 #el numero de variables del primer selection que tiene selected todas las variables originales 
-        
-        # for selection in list(dicc_selection_num_clusters.keys()):
-        #     dicc_numvars_selections[sum(selection)] = selection
-        #     if (selection[:num_vars_originales] == (1,)*num_vars_originales and key_var_orig_selected == 0):
-        #         key_var_orig_selected = sum(selection)
-
-        # x_aux = list(dicc_num_var_selected_num_clusters.keys()) #num_vars
-        # y_aux = list(range(2,max_num_considerado_clusters)) #num_clusters
-
-
-        # ############################################### Parte 3D
-        # #Puntos de la grafica 3D
-        # dicc_var_cluster_fit = {} #del tipo (numvar,numclusters) : fitness
-        # x = []
-        # y = []
-        # z = []
-        # for i in x_aux:
-        #     for j in y_aux:
-        #         crom = [j] + list(dicc_numvars_selections[i]) #hago list porque es una tupla
-        #         k = evaluate_ind(test.data_dummies,crom,fitness,'hierarchical',linkage)[0]
-        #         x.append(i)
-        #         y.append(j)
-        #         z.append(k)
-        #         dicc_var_cluster_fit[i,j] = k
-
-
-        # fig3D= plt.figure()
-        # ax3D = fig3D.add_subplot(111, projection='3d')
-        # ax3D.plot_trisurf(x, y, z, cmap='viridis') #crea una superficie uniendo los puntos
-        # #ax3D.scatter(x,y,z)
-
-        # ax3D.set_title(f'{name} Gráfica 3D : {fitness}, {linkage}')
-        # ax3D.set_xlabel('Número de variables')
-        # ax3D.set_ylabel('Número de clusters')
-        # ax3D.set_zlabel(f'Fitness {fitness}')
-
-
-        # output_path_3D=directory+f'/{name}_{fitness}_{linkage}_3D.png'
-        # plt.savefig(output_path_3D)
-        # plt.close(fig3D)
-
-        # ################################save diccionaries
-        # json_path = os.path.join(directory, f'{name}_{fitness}_{linkage}.json')
-
-        # data = {
-        #     'dicc_selection_num_clusters': {str(k): v for k, v in dicc_selection_num_clusters.items()},
-        #     'dicc_selection_fitness': {str(k): v for k, v in dicc_selection_fitness.items()},
-        #     'dicc_num_var_selected_ami_asociado':dicc_num_var_selected_ami_asociado,
-        #     'dicc_num_var_selected_nmi_asociado':dicc_num_var_selected_nmi_asociado,
-        #     'dicc_var_cluster_fit' : {str(k):v for k,v in dicc_var_cluster_fit.items()},
-        #     'dicc_num_var_umbral' : {str(k):v for k,v in dicc_num_var_umbral.items()}
-        # }
-
-
-        ##########################################################################################
-        
         # This only affects the graphs. We make up solutions for the missing number of variables so that the graphs are continuous but these solutions 
         # do not exist in reality as they do not correspond to any selection. They will not be selected as optimal solutions in any case. 
-        max_num_var_with_value=max(dicc_num_var_selected_fitness.keys())
+        max_num_var_with_value=max(self.dicc_num_var_selected_fitness.keys())
         #from the last one to the first one
         for i in range(max_num_var_with_value - 1, 0, -1):
-            if i not in dicc_num_var_selected_fitness.keys():
+            if i not in self.dicc_num_var_selected_fitness.keys():
                 #assign it the value of the one which is next to it
-                dicc_num_var_selected_fitness[i]=dicc_num_var_selected_fitness[i+1]
-                dicc_num_var_threshold[i]=dicc_num_var_threshold[i+1]
-
-        # # Crear una figura y dos ejes (subgráficas)
-        # fig, ax = plt.subplots(4,2, figsize=(16,16))  #4 filas
-        # fig.suptitle(f'{fitness} {linkage} '+name, fontsize=16)
-        # rango_x = list(dicc_num_var_selected_num_clusters.keys())
-
-
-        # separacion_eje_x = (max(rango_x)+1-min(rango_x))//35 #para que como mucho haya 35 (ajustarlo viendo a partir de que numero se pisan)
-        # # Primera: clusters number
-        # x1 = list(dicc_num_var_selected_num_clusters.keys())
-        # y1 = list(dicc_num_var_selected_num_clusters.values())
-        # ax[0,0].set_title("Numero de clusters por selection ")
-        # ax[0, 0].plot(x1, y1)
-        # ax[0,0].scatter(x1,y1)
-        # ax[0, 0].set_xlabel('Variables significativas')
-        # ax[0, 0].set_ylabel('num_clusters')
-        # ax[0, 0].set_xticks(range(min(x1), max(x1) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
-
-        # # Segunda: fitness interno  
-        # x2 = list(dicc_num_var_selected_fitness.keys())
-        # y2 = list(dicc_num_var_selected_fitness.values())
-        # x2, y2 = zip(*sorted(zip(x2, y2))) #ordenar
-        # ax[1,0].set_title(f'{fitness} por selection')
-        # ax[1, 0].plot(x2, y2)
-        # ax[1, 0].scatter(x2,y2)
-        # ax[1, 0].set_xlabel('Variables significativas')
-        # ax[1, 0].set_ylabel(f'fitness {fitness}')
-        # int_orig = evaluate_ind(test.data_dummies,[num_clusters]+[1]*num_vars_originales,fitness,'hierarchical',linkage)[0]
-        # ax[1,0].axhline(y=int_orig, color='green', linestyle='--', label=f'{fitness}_original')
-        # ax[1,0].legend()
-        # ax[1, 0].set_xticks(range(min(x2), max(x2) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
-
-
-        # # Tercera: ami (primera fila, segunda columna)
-        # x3 = list(dicc_num_var_selected_ami_asociado.keys())
-        # y3 = list(dicc_num_var_selected_ami_asociado.values())
-        # ax[0,1].set_title("AMI asociado al selection")
-        # ax[0, 1].plot(x3, y3)
-        # ax[0, 1].scatter(x3,y3)
-        # ax[0, 1].set_xlabel('Variables significativas')
-        # ax[0, 1].set_ylabel('fitness ami asociado')
-        # ami_orig = evaluate_ind(test.data_dummies,[num_clusters]+[1]*num_vars_originales,'ami','hierarchical',linkage)[0]
-        # ax[0,1].axhline(y=ami_orig, color='green', linestyle='--', label='ami_original')
-        # ax[0,1].legend()
-        # ax[0, 1].set_xticks(range(min(x3), max(x3) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
-
-
-        # # Cuarta: umbrales (segunda fila, segunda columna)
-        # x4 = list(dicc_num_var_umbral.keys())
-        # y4 = list(dicc_num_var_umbral.values())
-        # x4, y4 = zip(*sorted(zip(x4, y4))) #ordenar
-        # ax[1,1].set_title("threshold por selection")
-        # ax[1, 1].plot(x4, y4)
-        # ax[1, 1].scatter(x4,y4)
-        # ax[1, 1].set_xlabel('Variables significativas')
-        # ax[1, 1].set_ylabel('Umbral')
-        # umbral_var_originales = dicc_num_var_umbral[key_var_orig_selected]
-        # ax[1,1].axhline(y=umbral_var_originales, color='green', linestyle='--', label='threshold del primer selection con todas las vars originales')
-        # ax[1,1].legend()
-        # ax[1, 1].set_xticks(range(min(x4), max(x4) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
-
-
-
-        # # Quinta: nmi (tercera fila, primera columna)
-        # x5 = list(dicc_num_var_selected_nmi_asociado.keys())
-        # y5 = list(dicc_num_var_selected_nmi_asociado.values())
-        # ax[2,0].set_title("NMI asociado al selection")
-        # ax[2,0].plot(x5, y5)
-        # ax[2,0].scatter(x5,y5)
-        # ax[2,0].set_xlabel('Variables significativas')
-        # ax[2,0].set_ylabel('fitness NMI asociado')
-        # nmi_orig = evaluate_ind(test.data_dummies,[num_clusters]+[1]*num_vars_originales,'nmi','hierarchical',linkage)[0]
-        # ax[2,0].axhline(y=nmi_orig, color='green', linestyle='--', label='nmi_original')
-        # ax[2,0].legend()
-        # ax[2,0].set_xticks(range(min(x5), max(x5) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
-        
+                self.dicc_num_var_selected_fitness[i]=self.dicc_num_var_selected_fitness[i+1]
+                self.dicc_num_var_threshold[i]=self.dicc_num_var_threshold[i+1]
 
         #MinMax normalization of fitness and thresholds
-        dicc_num_var_selected_fitness_min_max_normalized= min_max_normalize_dictionary(dicc_num_var_selected_fitness)
-        dicc_num_var_threshold_min_max_normalized= min_max_normalize_dictionary(dicc_num_var_threshold)
+        self.dicc_num_var_selected_fitness_min_max_normalized= min_max_normalize_dictionary(self.dicc_num_var_selected_fitness)
+        self.dicc_num_var_threshold_min_max_normalized= min_max_normalize_dictionary(self.dicc_num_var_threshold)
 
         # Get the considered number of variables sorted (including the fake ones created for continuity)
-        keys_sorted=sorted(dicc_num_var_selected_fitness.keys())
+        keys_sorted=sorted(self.dicc_num_var_selected_fitness.keys())
 
         # Compute the average importance
-        dicc_num_var_selected_importance= {num_var:self.fitness_weight_over_threshold*dicc_num_var_selected_fitness_min_max_normalized[num_var]+(1-self.fitness_weight_over_threshold)*dicc_num_var_threshold_min_max_normalized[num_var] for num_var in keys_sorted}
+        self.dicc_num_var_selected_importance= {num_var:self.fitness_weight_over_threshold*self.dicc_num_var_selected_fitness_min_max_normalized[num_var]+(1-self.fitness_weight_over_threshold)*self.dicc_num_var_threshold_min_max_normalized[num_var] for num_var in keys_sorted}
 
         # Compute the differences (deltas)
         for i in range(len(keys_sorted)-1):
             key_current=keys_sorted[i]
             key_next=keys_sorted[i+1]
-            dictionary_deltas[key_current]= max(0, dicc_num_var_selected_importance[key_current]-dicc_num_var_selected_importance[key_next])
+            self.dictionary_deltas_importance_diferences[key_current]= max(0, self.dicc_num_var_selected_importance[key_current]-self.dicc_num_var_selected_importance[key_next])
         # For the last one, the next value is considered 0
         # The max is not necessary here because the importances are possitive but for consistency with the others
-        dictionary_deltas[keys_sorted[-1]]= max(0,dicc_num_var_selected_importance[keys_sorted[-1]])
+        self.dictionary_deltas_importance_diferences[keys_sorted[-1]]= max(0,self.dicc_num_var_selected_importance[keys_sorted[-1]])
 
-        dictionary_deltas_with_exponential_decay=dictionary_deltas.copy()
+        self.dictionary_deltas_importance_diferences_with_exponential_decay=self.dictionary_deltas_importance_diferences.copy()
 
         # Add the exponential decay to the deltas if exponential_decay_factor>0
         if self.exponential_decay_factor>0:
             # It divides the ponderations by a factor of 1+((N-1) / (math.exp(exponential_decay_factor * num_var))) where N is the toltal number of variables and num_var is the number of variables selected.
             # The exponential_decay_factor * num_var < 700 avoids overflow
-            dictionary_deltas_with_exponential_decay= {num_var: delta/(1+((len(dictionary_deltas)-1) / (np.exp(self.exponential_decay_factor * num_var)))) if self.exponential_decay_factor * num_var < 700 else delta for (num_var, delta) in dictionary_deltas.items()}
+            self.dictionary_deltas_importance_diferences_with_exponential_decay= {num_var: delta/(1+((len(self.dictionary_deltas_importance_diferences)-1) / (np.exp(self.exponential_decay_factor * num_var)))) if self.exponential_decay_factor * num_var < 700 else delta for (num_var, delta) in self.dictionary_deltas_importance_diferences.items()}
 
         # Use the deltas with exponential decay for selecting the optimal solution
         # Notice that the fake solutions' deltas are 0 and as long as there is a possitive delta they will not be selected
-        optimal_num_variables= max(dictionary_deltas_with_exponential_decay, key=dictionary_deltas_with_exponential_decay.get)
+        optimal_num_variables= max(self.dictionary_deltas_importance_diferences_with_exponential_decay, key=self.dictionary_deltas_importance_diferences_with_exponential_decay.get)
 
         # if a fake solution is selected this is because all the deltas are 0 =>
         # => all the variables have the same importance => all variables are significant
-        if optimal_num_variables not in dicc_num_var_selection_with_that_num_variables.keys():
-            self.optimal_variable_selection_and_num_of_clusters = [1]*self.num_vars, dicc_num_var_selected_num_clusters[self.num_vars]
-            self.fitness_of_optimal_variable_selection_and_num_of_clusters = dicc_num_var_selected_fitness[self.num_vars]
+        if optimal_num_variables not in self.dicc_num_var_selection_with_that_num_variables.keys():
+            self.optimal_variable_selection_and_num_of_clusters = [1]*self.num_vars, self.dicc_num_var_selected_num_clusters[self.num_vars]
+            self.fitness_of_optimal_variable_selection_and_num_of_clusters = self.dicc_num_var_selected_fitness[self.num_vars]
             return self.optimal_variable_selection_and_num_of_clusters, self.fitness_of_optimal_variable_selection_and_num_of_clusters
 
-        self.optimal_variable_selection_and_num_of_clusters = dicc_num_var_selection_with_that_num_variables[optimal_num_variables] , dicc_num_var_selected_num_clusters[optimal_num_variables]
-        self.fitness_of_optimal_variable_selection_and_num_of_clusters = dicc_num_var_selected_fitness[optimal_num_variables]
+        self.optimal_variable_selection_and_num_of_clusters = self.dicc_num_var_selection_with_that_num_variables[optimal_num_variables] , self.dicc_num_var_selected_num_clusters[optimal_num_variables]
+        self.fitness_of_optimal_variable_selection_and_num_of_clusters = self.dicc_num_var_selected_fitness[optimal_num_variables]
         return self.optimal_variable_selection_and_num_of_clusters, self.fitness_of_optimal_variable_selection_and_num_of_clusters
     
+    def plot_dictionaries(self):
+        """
+        This method creates and saves plots for the following dictionaries:
+        - Number of clusters vs. number of selected variables
+        - Fitness vs. number of selected variables
+        - Threshold vs. number of selected variables
+        - Importance and Delta Importance vs. number of selected variables
+        These plots are essential for analyzing the results of the variable weight analysis and help the user make 
+        a more informed selection of variables and asociated number of clusters further than relying solely on the 
+        automatic selection. By choosing a solution with a high delta importance different from the one that reaches
+        the maximum fitness, the user can balance himself between the dimensionality reduction and the clustering 
+        quality (as more reduction usually implies a loss of information that negatively affects external metrics).
+        """
 
-    #         if x_argmax not in dicc_num_var_selected_ami_asociado.keys():#si no esta es porque es una solucion inventada por la grafica => no hay diferencias entre derivada (caidas) =>todas las variables son significativas. Este caso no se va a dar nunca por la expenencia que mete caida
-    #             x_argmax=max(dicc_num_var_selected_ami_asociado.keys())#se cogen todas las variables
-    #         ax[3,1].axvline(x=x_argmax, color='black', linestyle='--', label=f'Máx caída en {x_argmax} vars con ami: {dicc_num_var_selected_ami_asociado[x_argmax]:.3f}')
-    #         dicc_soluciones[(ponderacion_interno,k_decay)]=(list(dicc_selection_num_clusters.keys())[indice_x_argmax_relativo_huecos],x_argmax,dicc_num_var_selected_num_clusters[x_argmax],dicc_num_var_selected_ami_asociado[x_argmax],dicc_num_var_selected_ami_asociado[x_argmax]/ami_orig)
-            
-
-
-    #     # Sexta: suma interno+umbrales p=0.5, k=0 (sin exponential decay)
-    #     x6=x4
-    #     max_y2=max(y2)
-    #     min_y2=min(y2)
-    #     y2_normalized=[(y-min_y2)/(max_y2-min_y2) for y in y2]
-    #     max_y4=max(y4)
-    #     min_y4=min(y4)
-    #     y4_normalized=[(y-min_y4)/(max_y4-min_y4) for y in y4]
-    #     y6=[ponderacion_interno*y2_normalized[i]+(1-ponderacion_interno)*y4_normalized[i] for i in range(len(x4))]
-    #     ax[2,1].set_title(f"Suma de fitness (peso={ponderacion_interno}) y threshold por selection (peso={1-ponderacion_interno}). Sin Exponencial decay")
-
-    #     # Cálculo de las diferencias (caidas)
-    #     red_points_y = [max(0, y6[i] - y6[i + 1]) for i in range(len(y6) - 1)]  # Calculamos la diferencia entre los valores de y6
-    #     # Para el último valor de y6, tomamos y6[i+1] como 0
-    #     red_points_y.append(max(0, y6[-1]))  # Calculamos la diferencia para el último valor de y6 (siendo y6[i+1] = 0)
-    #     # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
-
-
-    #     ax[2,1].plot(x6, y6)
-    #     ax[2,1].scatter(x6,y6)
-
-    #     ax[2,1].scatter(x6, red_points_y, color='r',marker='x', label='Caídas', zorder=5)
-
-    #     ax[2,1].set_xlabel('Variables significativas')
-    #     ax[2,1].set_ylabel('valor')
-    #     value_associated_originals=ponderacion_interno*(int_orig-min_y2)/(max_y2-min_y2)+(1-ponderacion_interno)*(dicc_num_var_umbral[key_var_orig_selected]-min_y4)/(max_y4-min_y4)
-    #     ax[2,1].axhline(y=value_associated_originals, color='green', linestyle='--', label='valoración originales')
-    #     ax[2,1].legend()
-    #     ax[2,1].set_xticks(range(min(x5), max(x5) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        fig.suptitle('Analysis by Number of Variables', fontsize=16)
         
-    #     #septima: p=0.35, k=0.6
-    #     ponderacion_interno=0.35
-    #     k_decay=0.6
-    #     x6=x4
-    #     max_y2=max(y2)
-    #     min_y2=min(y2)
-    #     y2_normalized=[(y-min_y2)/(max_y2-min_y2) for y in y2]
-    #     max_y4=max(y4)
-    #     min_y4=min(y4)
-    #     y4_normalized=[(y-min_y4)/(max_y4-min_y4) for y in y4]
-    #     y6=[ponderacion_interno*y2_normalized[i]+(1-ponderacion_interno)*y4_normalized[i] for i in range(len(x4))]
-    #     ax[3,0].set_title(f"Suma de fitness (peso={ponderacion_interno}) y threshold por selection (peso={1-ponderacion_interno}). Exponencial decay k={k_decay}")
+        # Plot 1: Number of clusters
+        ax1 = axes[0, 0]
+        x1 = list(self.dicc_num_var_selected_num_clusters.keys())
+        y1 = list(self.dicc_num_var_selected_num_clusters.values())
+        ax1.plot(x1, y1, marker='o', color='black')
+        ax1.set_xlabel('Number of Selected Variables')
+        ax1.set_ylabel('Number of Clusters')
+        ax1.set_title('Number of Clusters for Each Selection')
+        ax1.grid(True, alpha=0.3)
+        ax1.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+        ax1.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
+        # Plot 2: Fitness
+        ax2 = axes[0, 1]
+        x2 = list(self.dicc_num_var_selected_fitness.keys())
+        y2 = list(self.dicc_num_var_selected_fitness.values())
+        ax2.plot(x2, y2, marker='o', color='tab:blue')
+        ax2.set_xlabel('Number of Selected Variables')
+        ax2.set_ylabel('Fitness')
+        ax2.set_title('Fitness for Each Selection')
+        ax2.grid(True, alpha=0.3)
+        ax2.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
-    #     # Cálculo de las diferencias (caidas)
-    #     red_points_y = [max(0, y6[i] - y6[i + 1]) for i in range(len(y6) - 1)]  # Calculamos la diferencia entre los valores de y6
-    #     # Para el último valor de y6, tomamos y6[i+1] como 0
-    #     red_points_y.append(max(0, y6[-1]))  # Calculamos la diferencia para el último valor de y6 (siendo y6[i+1] = 0)
-    #     # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
+        # Plot 3: Threshold
+        ax3 = axes[1, 0]
+        x3 = list(self.dicc_num_var_threshold.keys())
+        y3 = list(self.dicc_num_var_threshold.values())
+        ax3.plot(x3, y3, marker='o', color='tab:blue')
+        ax3.set_xlabel('Number of Selected Variables')
+        ax3.set_ylabel('Threshold')
+        ax3.set_title('Threshold for Each Selection')
+        ax3.grid(True, alpha=0.3)
+        ax3.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
-    #     if k_decay>0:
-    #         red_points_y=[p/(1+((len(red_points_y)-1) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables. k_decay * i < 700 avoids overflow
+        # Plot 4: Importance (continuous line) and Delta Importance (red crosses)
+        ax4 = axes[1, 1]
+        x4 = list(self.dicc_num_var_selected_importance.keys())
+        y4 = list(self.dicc_num_var_selected_importance.values())
+        ax4.plot(x4, y4, marker='o', label="Selected Variables' Importance", color='navy')
 
-            
-            
+        x5 = list(self.dictionary_deltas_importance_diferences_with_exponential_decay.keys())
+        y5 = list(self.dictionary_deltas_importance_diferences_with_exponential_decay.values())
+        ax4.scatter(x5, y5, marker='x', s=50, color='red', label='Delta Importance with Exp Decay')
 
-    #         #########################################################################################################################3
-    #         """Lo hago asi por crear la tabla , pero es algo a tener en cuenta en la refactorización : El diccionario cuyas claves son los cromosomas tiene 'saltos de mas de una variable' y para luego "rescatar" el cromosoma óptimo se hace complicado.  ()
-    #         """
+        x_argmax=sum(self.optimal_variable_selection_and_num_of_clusters[0])
+        ax4.axvline(x=x_argmax, color='black', linestyle='--', label=f'Automatic solution with {x_argmax} variables achieving a fitness of: {self.dicc_num_var_selected_fitness[x_argmax]:.3f}')
 
-    #         x_argmax = x6[red_points_y.index(max(red_points_y))] #nuemro de variables para el maximo
-    #         #En dicc_num_var_selected_ami_asociado tenemos las variables con los mismos "huecos", entonces voy a coger como si fuera el "indice_relativo" teniendo en cuenta los huecos ya 
-    #         lista_vars_con_huecos = list(dicc_num_var_selected_ami_asociado.keys())
-    #         indice_x_argmax_relativo_huecos = lista_vars_con_huecos.index(x_argmax) #indice relativo para acceder al cromosoma óptimo 
-
-    #         ###############################################################################################33
-            
-
-
-
-    #         if x_argmax not in dicc_num_var_selected_ami_asociado.keys():#si no esta es porque es una solucion iventada por la grafica => no hay diferencias entre derivada (caidas) =>todas las variables son significativas. Este caso no se va a dar nunca
-    #             x_argmax=max(dicc_num_var_selected_ami_asociado.keys())#se cogen todas las variables
-    #         ax[3,0].axvline(x=x_argmax, color='black', linestyle='--', label=f'Máx caída en {x_argmax} vars con ami: {dicc_num_var_selected_ami_asociado[x_argmax]:.3f}')
-
-    #         dicc_soluciones[(ponderacion_interno,k_decay)]=(list(dicc_selection_num_clusters.keys())[indice_x_argmax_relativo_huecos],x_argmax,dicc_num_var_selected_num_clusters[x_argmax],dicc_num_var_selected_ami_asociado[x_argmax],dicc_num_var_selected_ami_asociado[x_argmax]/ami_orig)
-            
-    #     ax[3,0].plot(x6, y6)
-    #     ax[3,0].scatter(x6,y6)
-
-    #     ax[3,0].scatter(x6, red_points_y, color='r',marker='x', label='Caídas', zorder=5)
-
-    #     ax[3,0].set_xlabel('Variables significativas')
-    #     ax[3,0].set_ylabel('valor')
-    #     value_associated_originals=ponderacion_interno*(int_orig-min_y2)/(max_y2-min_y2)+(1-ponderacion_interno)*(dicc_num_var_umbral[key_var_orig_selected]-min_y4)/(max_y4-min_y4)
-    #     ax[3,0].axhline(y=value_associated_originals, color='green', linestyle='--', label='valoración originales')
-    #     ax[3,0].legend()
-    #     ax[3,0].set_xticks(range(min(x5), max(x5) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
+        ax4.set_xlabel('Number of Selected Variables')
+        ax4.set_ylabel('Importance')
+        ax4.set_title('Importance Metrics')
+        ax4.legend()
+        ax4.grid(True, alpha=0.3)
+        ax4.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
         
-    # #octava: p=0.5, k=1
-    #     ponderacion_interno=0.5
-    #     k_decay=1
-    #     x6=x4
-    #     max_y2=max(y2)
-    #     min_y2=min(y2)
-    #     y2_normalized=[(y-min_y2)/(max_y2-min_y2) for y in y2]
-    #     max_y4=max(y4)
-    #     min_y4=min(y4)
-    #     y4_normalized=[(y-min_y4)/(max_y4-min_y4) for y in y4]
-    #     y6=[ponderacion_interno*y2_normalized[i]+(1-ponderacion_interno)*y4_normalized[i] for i in range(len(x4))]
-    #     ax[3,1].set_title(f"Suma de fitness (peso={ponderacion_interno}) y threshold por selection (peso={1-ponderacion_interno}). Exponencial decay k={k_decay}")
+        plt.tight_layout()
+        output_path= self.output_directory+"results/analysis_by_number_of_variables.png"
+        plt.savefig(output_path)
+        plt.close(fig)
+        if self.verbose:
+            print(f'Analysis by number of variables plot saved to {output_path}')
 
-    #     # Cálculo de las diferencias (caidas)
-    #     red_points_y = [max(0, y6[i] - y6[i + 1]) for i in range(len(y6) - 1)]  # Calculamos la diferencia entre los valores de y6
-    #     # Para el último valor de y6, tomamos y6[i+1] como 0
-    #     red_points_y.append(max(0, y6[-1]))  # Calculamos la diferencia para el último valor de y6 (siendo y6[i+1] = 0)
-    #     # red_points_y = [p / ((len(red_points_y) - i) ** 2) for i, p in enumerate(red_points_y)]#penalizacion low number variables
-
-    #     if k_decay>0:
-    #         red_points_y=[p/(1+((len(red_points_y)-1) / (np.exp(k_decay * i)))) if k_decay * i < 700 else p for i, p in enumerate(red_points_y)]#exponential decay that divides the ponderations by a factor of 1+((N-1) / (math.exp(k * i))) where N is the number of variables.k_decay * i < 700 avoids overflow
+    def plot_num_variables_and_clusters_3D(self):
+        """
+        Creates a 3D plot showing the relationship between number of variables,
+        number of clusters, and fitness values.
+        """
+        try:
+            # Prepare data points for 3D plot
+            x = []
+            y = []
+            z = []
             
-    #         #########################################################################################################################3
-    #         """Lo hago asi por crear la tabla , pero es algo a tener en cuenta en la refactorización : El diccionario cuyas claves son los cromosomas tiene 'saltos de mas de una variable' y para luego "rescatar" el cromosoma óptimo se hace complicado.  ()
-    #         """
+            for num_vars in self.dicc_num_var_selection_with_that_num_variables.keys():
+                dict_num_cluster_fit=self.dicc_num_var_all_clusters_fitness[num_vars]
+                for num_clusters in dict_num_cluster_fit.keys():
+                    fitness_value = dict_num_cluster_fit[num_clusters]
+                    x.append(num_clusters)
+                    y.append(num_vars)
+                    z.append(fitness_value)
 
-    #         x_argmax = x6[red_points_y.index(max(red_points_y))] #nuemro de variables para el maximo
-    #         #En dicc_num_var_selected_ami_asociado tenemos las variables con los mismos "huecos", entonces voy a coger como si fuera el "indice_relativo" teniendo en cuenta los huecos ya 
-    #         lista_vars_con_huecos = list(dicc_num_var_selected_ami_asociado.keys())
-    #         indice_x_argmax_relativo_huecos = lista_vars_con_huecos.index(x_argmax) #indice relativo para acceder al cromosoma óptimo 
-
-    #         ###############################################################################################33
-        
-
-
-    #         if x_argmax not in dicc_num_var_selected_ami_asociado.keys():#si no esta es porque es una solucion inventada por la grafica => no hay diferencias entre derivada (caidas) =>todas las variables son significativas. Este caso no se va a dar nunca por la expenencia que mete caida
-    #             x_argmax=max(dicc_num_var_selected_ami_asociado.keys())#se cogen todas las variables
-    #         ax[3,1].axvline(x=x_argmax, color='black', linestyle='--', label=f'Máx caída en {x_argmax} vars con ami: {dicc_num_var_selected_ami_asociado[x_argmax]:.3f}')
-    #         dicc_soluciones[(ponderacion_interno,k_decay)]=(list(dicc_selection_num_clusters.keys())[indice_x_argmax_relativo_huecos],x_argmax,dicc_num_var_selected_num_clusters[x_argmax],dicc_num_var_selected_ami_asociado[x_argmax],dicc_num_var_selected_ami_asociado[x_argmax]/ami_orig)
+            # Create 3D plot
+            fig3D = plt.figure(figsize=(10, 8))
+            ax3D = fig3D.add_subplot(111, projection='3d')
+            ax3D.plot_trisurf(x, y, z, cmap='viridis', alpha=0.8)
             
-    #     ax[3,1].plot(x6, y6)
-    #     ax[3,1].scatter(x6,y6)
+            ax3D.set_title('3D Plot: Clusters vs Variables vs Fitness')
+            ax3D.set_xlabel('Number of Clusters')
+            ax3D.set_ylabel('Number of Variables')
+            ax3D.set_zlabel('Fitness Value')
+            
+            plt.tight_layout()
+            
+            # Save the plot
+            output_path_3D = f'{self.output_directory}results/3D_plot_vars_clusters_fitness.png'
+            plt.savefig(output_path_3D, dpi=300, bbox_inches='tight')
+            plt.close(fig3D)
+            
+            if self.verbose:
+                print(f"3D plot saved to: {output_path_3D}")
+                
+        except Exception as e:
+            warnings.warn(f"Couldn't create a 3D plot for Variables vs Clusters vs Fitness. Error: {str(e)}", UserWarning)
 
-    #     ax[3,1].scatter(x6, red_points_y, color='r',marker='x', label='Caídas', zorder=5)
+    def get_plot_comparing_solution_with_another_metric(self, new_metric, true_number_of_labels=None, output_path=None):
+        """
+        Generates two side-by-side plots comparing:
+        - Left: Variables vs Used Fitness in the execution GAUFS (from dicc_num_var_selected_fitness)
+        - Right: Variables vs Provided Metric for each selection and it's associated number of clusters.
+        This allows comparison between the fitness used in GAUFS and an external metric of interest.
+        Args:
+            new_metric (function): Must implement evaluation interface.
+            true_number_of_labels (int or None): True number of labels from the data. If especified, the plots include a baseline comparing the score that would be obtained with the true number of labels as number of the clusters. Default is None.
+            output_path (str or None): Path to save the generated plot. If None, saves to the default location self.output_directory/comparison_fitness_vs_external_metric.png.
+        """
+        # Extract data
+        num_vars, fitness_values = zip(*sorted(self.dicc_num_var_selected_fitness.items()))
+        x_argmax=sum(self.optimal_variable_selection_and_num_of_clusters[0])
 
-    #     ax[3,1].set_xlabel('Variables significativas')
-    #     ax[3,1].set_ylabel('valor')
-    #     value_associated_originals=ponderacion_interno*(int_orig-min_y2)/(max_y2-min_y2)+(1-ponderacion_interno)*(dicc_num_var_umbral[key_var_orig_selected]-min_y4)/(max_y4-min_y4)
-    #     ax[3,1].axhline(y=value_associated_originals, color='green', linestyle='--', label='valoración originales')
-    #     ax[3,1].legend()
-    #     ax[3,1].set_xticks(range(min(x5), max(x5) + 1,1+separacion_eje_x))  # Marcadores enteros en el eje X
+        # Calculate external metric for each selection
+        external_metrics = []
+
+        fitnesses_with_true_labels = []
+        external_metrics_with_true_labels = []
+
+        for i in num_vars:
+            selection = self.dicc_num_var_selection_with_that_num_variables[i]
+            n_clusters = self.dicc_num_var_selected_num_clusters[i]
+            
+            metric_value = evaluate_ind(unlabeled_data=self.unlabeled_data, cluster_number=n_clusters, variables=selection, clustering_method=self.clustering_method, evaluation_metric=new_metric)
+            external_metrics.append(metric_value)
+
+            # If true number of labels is provided, calculate metrics for that as well
+            if true_number_of_labels is not None:
+                fitness_true_labels = evaluate_ind(unlabeled_data=self.unlabeled_data, cluster_number=true_number_of_labels, variables=selection, clustering_method=self.clustering_method, evaluation_metric=self.evaluation_metric)
+                fitnesses_with_true_labels.append(fitness_true_labels)
+
+                metric_true_labels = evaluate_ind(unlabeled_data=self.unlabeled_data, cluster_number=true_number_of_labels, variables=selection, clustering_method=self.clustering_method, evaluation_metric=new_metric)
+                external_metrics_with_true_labels.append(metric_true_labels)
         
-
-
-
-    #     # Mostrar las gráficas
-    #     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Ajustar el espaciado
-    #     # plt.show()
-    #     #save images
+        # Create figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
         
-    #     output_path=directory+f'/{name}_{fitness}_{linkage}.png'
-    #     plt.savefig(output_path)
-    #     print(f'Analysis variables y num clusters guardados en {output_path}')
+        # Left plot: Variables vs Fitness
+        ax1.plot(num_vars, fitness_values, marker='o', linewidth=2, markersize=8,color="tab:blue")
+        ax1.set_xlabel('Number of Variables', fontsize=12)
+        ax1.set_ylabel('Fitness', fontsize=12)
+        ax1.set_title('Used Fitness in GAUFS', fontsize=14)
+        ax1.grid(True, alpha=0.3)
+        ax1.axvline(x=x_argmax, color='black', linestyle='--', label=f'Automatic solution with {x_argmax} variables achieving a fitness of: {self.dicc_num_var_selected_fitness[x_argmax]:.3f}')
+        ax1.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+        ax1.legend()
+
+        # Right plot: Variables vs External Metric
+        ax2.plot(num_vars, external_metrics, marker='s', linewidth=2, markersize=8, color='tab:blue')
+        ax2.set_xlabel('Number of Variables', fontsize=12)
+        ax2.set_ylabel('Metric', fontsize=12)
+        ax2.set_title('New Given Metric for Comparison', fontsize=14)
+        ax2.grid(True, alpha=0.3)
+        ax2.axvline(x=x_argmax, color='black', linestyle='--', label=f'Automatic solution with {x_argmax} variables achieving a metric of: {external_metrics[num_vars.index(x_argmax)]:.3f}')
+        ax2.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+        ax2.legend()
+
+        # Add baseline scores for true number of labels
+        if true_number_of_labels is not None:
+            #Fitness for each selection with True Labels and Metric for each selection with True Labels
+            ax1.plot(num_vars, fitnesses_with_true_labels, marker='o', linestyle='--', color='red', label='Fitness for each selection with True Number of Labels')
+            ax2.plot(num_vars, external_metrics_with_true_labels, marker='s', linestyle='--', color='red', label='Metric for each selection with True Number of Labels')
+            ax1.legend()
+            ax2.legend()
+
+        plt.tight_layout()
         
-    #     plt.close(fig)
-
-    #     data['dicc_soluciones'] = {str(k):v for k,v in dicc_soluciones.items()}#add the solutions to the json
-
-    #     # Guardar todo en un archivo JSON
-    #     with open(json_path, mode='w') as file:
-    #         json.dump(data, file, indent=4)
-
-    #     print(f'Datos guardados como JSON en {json_path}')
+        # Save the plot
+        output_path = os.path.join(self.output_directory, 'comparison_fitness_vs_given_metric.png') if output_path is None else output_path
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        if self.verbose:
+            print(f"Comparison plot saved to: {output_path}")
+            
+        return output_path
+            
+            
