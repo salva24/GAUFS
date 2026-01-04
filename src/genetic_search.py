@@ -295,9 +295,14 @@ class GeneticSearch:
         if self.graph_evolution:
             self.save_graph_evolution(best_inds, avg_fitness_history)
         if self.store_log:
+            # Save Hall of Fame from the last genetic execution to a file
+            with open(self.path_store_log + "hall_of_fame.txt", 'w') as f:
+                for ind in self.hof:
+                    f.write(f'Individual: {ind}, Fitness: {ind.fitness.values[0]}\n')
+            # Save hof_counter to a file
             with open(self.path_store_log + "hall_of_fame_counter.txt", 'w') as f:
                 for key, value in self.hof_counter.items():
-                    f.write(f'Selection: {key}, (Max Fitness: {value[0]}, Times in HoF: {value[1]})\n')
+                    f.write(f'Selection: {key}, (Max Fitness: {value[0]}, Times in HoF: {value[1]})\n')        
 
         return self.hof_counter, self.num_clusters_and_its_max_fitness
     

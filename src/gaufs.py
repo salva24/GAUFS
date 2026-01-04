@@ -8,7 +8,6 @@ import os
 import warnings
 import json
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 class Gaufs:
     def __init__(
@@ -235,9 +234,6 @@ class Gaufs:
             alpha = self.hof_alpha_beta[0]
             tam = int(self.npop*(beta-(beta-alpha)*np.log(2)/np.log((self.unlabeled_data.shape[1]+1))))
             self.hof_size = tam if tam != 0 else 1
-
-            # Set the evaluation metric's unlabeled data
-            self.evaluation_metric.unlabeled_data=self.unlabeled_data
 
     def read_unlabeled_data_csv(self, filepath, recompute_default_parameters=True):
         """

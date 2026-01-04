@@ -47,8 +47,8 @@ def evaluate_ind(unlabeled_data, cluster_number, variables, clustering_method, e
         #get the results
         assigned_clusters = experiment.assigned_clusters
 
-        # Evaluate the clustering result with the provided metric
-        ev = evaluation_metric.compute(assigned_clusters)
+        # Evaluate the clustering result with the provided metric and the filtered data
+        ev = evaluation_metric.compute(assigned_clusters=assigned_clusters, unlabeled_data=filtered_data)
 
         return ev
     

@@ -14,61 +14,59 @@ class EvaluationMetric:
     All metrics share the same signature: compute(assigned_clusters)
     """
     
-    def __init__(self, unlabeled_data=None, true_labels=None):
+    def __init__(self, true_labels=None):
         """
         Initialize the metric with data and labels that won't change.
         
         Args:
-            unlabeled_data: The original data (DataFrame). Required for internal metrics.
             true_labels: Ground truth labels. Required only for external metrics. It can be left as None for internal metrics.
         """
-        self.unlabeled_data = unlabeled_data
         self.true_labels = true_labels
     
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         """
         Compute the metric given cluster assignments.
         Must be implemented by each metric subclass.
         
         Args:
             assigned_clusters: The cluster assignments to evaluate
+            unlabeled_data: The original data (DataFrame or None). Required for internal metrics. If the metric does not need it, it can be left as None.
             
         Returns:
             float: The metric score
         """
         raise NotImplementedError("Subclasses must implement compute()")
-
-
+    
 
 
 # Internal metrics (only need unlabeled_data)
 
 class SilhouetteScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ## Score between -1 and 1. (very dense clusters)
-        return metrics.silhouette_score(self.unlabeled_data, assigned_clusters)
+        return metrics.silhouette_score(unlabeled_data, assigned_clusters)
 
 
 class CalinskiHarabaszScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ## Bad for DBSCAN
-        return metrics.calinski_harabasz_score(self.unlabeled_data, assigned_clusters)
+        return metrics.calinski_harabasz_score(unlabeled_data, assigned_clusters)
 
 
 class DaviesBouldinScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         # Best values are the closest to 0. To maximize the score in GAUFS use davies_bouldin_score_for_maxamization
-        return metrics.davies_bouldin_score(self.unlabeled_data, assigned_clusters)
+        return metrics.davies_bouldin_score(unlabeled_data, assigned_clusters)
 
 
 class DaviesBouldinScoreForMaxamization(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         # To maximize the score in GAUFS we do 1 - davies_bouldin_score
-        return 1 - metrics.davies_bouldin_score(self.unlabeled_data, assigned_clusters)
+        return 1 - metrics.davies_bouldin_score(unlabeled_data, assigned_clusters)
 
 
 class DunnScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ### Implementation of Dunn score, source: https://github.com/jqmviegas/jqm_cvi/blob/master/jqmcvi/base.py
 
         def delta_fast(ck, cl, distances):
@@ -86,7 +84,7 @@ class DunnScore(EvaluationMetric):
             res=np.max(values)
             return res if res > epsilon else epsilon # avoid dividing by 0
         
-        points = self.unlabeled_data
+        points = unlabeled_data
         labels = assigned_clusters
         distances = euclidean_distances(points)
         ks = np.sort(np.unique(labels))
@@ -107,10 +105,10 @@ class DunnScore(EvaluationMetric):
 
 
 class SSEScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         # To maximize in GAUFS use sse_score_for_maximization
         # data with cluster assigned
-        data_with_clusters_assigned = self.unlabeled_data.copy()
+        data_with_clusters_assigned = unlabeled_data.copy()
         data_with_clusters_assigned['cluster'] = assigned_clusters
 
         data = data_with_clusters_assigned.copy()
@@ -126,9 +124,9 @@ class SSEScore(EvaluationMetric):
 
 
 class SSEScoreForMaximization(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         # To maximize the score in GAUFS -sse_score
-        data_with_clusters_assigned = self.unlabeled_data.copy()
+        data_with_clusters_assigned = unlabeled_data.copy()
         data_with_clusters_assigned['cluster'] = assigned_clusters
 
         data = data_with_clusters_assigned.copy()
@@ -146,7 +144,7 @@ class SSEScoreForMaximization(EvaluationMetric):
 # External metrics (need true_labels)
 
 class AdjustedMutualInformationScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ## AMI: Function that measures how well the optimal assignment corresponds to the one returned by the algorithm.
         # Based on entropy. Normalized and symmetric.
         # Bad assignments can take negative values, optimal assignment -> 1.
@@ -154,13 +152,13 @@ class AdjustedMutualInformationScore(EvaluationMetric):
 
 
 class RandIndexScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ## Coefficient that assigns 1. to the optimal prediction and values close to 0 the more random the predictions are
         return metrics.adjusted_rand_score(self.true_labels, assigned_clusters)
 
 
 class VMeasureScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ## Combination of two criteria: homogeneity and completeness.
         # Homogeneity: each cluster contains only values corresponding to one label.
         # Completeness: all values corresponding to the same label are assigned to the same cluster.
@@ -171,7 +169,7 @@ class VMeasureScore(EvaluationMetric):
 
 
 class FowlkesMallowsScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         ## Geometric mean of precision and recall.
         # Random assignments have a value close to 0.
         # Normalized.
@@ -179,17 +177,17 @@ class FowlkesMallowsScore(EvaluationMetric):
 
 
 class FScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         return metrics.f1_score(self.true_labels, assigned_clusters, average='weighted')
 
 
 class NMIScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         return metrics.normalized_mutual_info_score(self.true_labels, assigned_clusters)
 
 
 class HScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         true_labels = self.true_labels
         predicted_cluster = assigned_clusters
         confusion = confusion_matrix(true_labels, predicted_cluster)
@@ -203,7 +201,7 @@ class HScore(EvaluationMetric):
 
 
 class Chi2(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         table1 = get_cont_table(assigned_clusters, self.true_labels, round=False)
         table2 = get_cont_table(self.true_labels, assigned_clusters, round=False)
         chi2_1 = chi2_contingency(table1)[0]
@@ -212,7 +210,7 @@ class Chi2(EvaluationMetric):
 
 
 class DobPertScore(EvaluationMetric):
-    def compute(self, assigned_clusters):
+    def compute(self, assigned_clusters, unlabeled_data=None):
         cont_clust = get_cont_table(assigned_clusters, self.true_labels, round=False)
         cont_event = get_cont_table(self.true_labels, assigned_clusters, round=False)
 
