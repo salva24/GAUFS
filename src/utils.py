@@ -96,6 +96,23 @@ def clear_directory(directory_path):
     # Recreate the empty directory
     os.makedirs(directory_path)
 
+# Helper function to plot with discontinuities
+@staticmethod
+def plot_discontinuous(ax, x_vals, y_vals, **kwargs):
+    """Plot lines only between consecutive x values"""
+    i = 0
+    while i < len(x_vals):
+        # Find the end of the consecutive sequence
+        j = i
+        while j < len(x_vals) - 1 and x_vals[j+1] == x_vals[j] + 1:
+            j += 1
+        
+        # Plot this consecutive segment
+        ax.plot(x_vals[i:j+1], y_vals[i:j+1], **kwargs)
+        
+        # Move to next segment
+        i = j + 1
+
 @staticmethod
 def convert_to_serializable(obj):
     """

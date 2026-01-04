@@ -497,8 +497,8 @@ class Gaufs:
         
         # Plot 1: Number of clusters
         ax1 = axes[0, 0]
-        x1 = list(self.dicc_num_var_selected_num_clusters.keys())
-        y1 = list(self.dicc_num_var_selected_num_clusters.values())
+        x1,y1= zip(*sorted(self.dicc_num_var_selected_num_clusters.items()))
+        
         ax1.plot(x1, y1, marker='o', color='black')
         ax1.set_xlabel('Number of Selected Variables')
         ax1.set_ylabel('Number of Clusters')
@@ -509,8 +509,7 @@ class Gaufs:
 
         # Plot 2: Fitness
         ax2 = axes[0, 1]
-        x2 = list(self.dicc_num_var_selected_fitness.keys())
-        y2 = list(self.dicc_num_var_selected_fitness.values())
+        x2,y2= zip(*sorted(self.dicc_num_var_selected_fitness.items()))
         ax2.plot(x2, y2, marker='o', color='tab:blue')
         ax2.set_xlabel('Number of Selected Variables')
         ax2.set_ylabel('Fitness')
@@ -520,8 +519,7 @@ class Gaufs:
 
         # Plot 3: Threshold
         ax3 = axes[1, 0]
-        x3 = list(self.dicc_num_var_threshold.keys())
-        y3 = list(self.dicc_num_var_threshold.values())
+        x3,y3= zip(*sorted(self.dicc_num_var_threshold.items()))
         ax3.plot(x3, y3, marker='o', color='tab:blue')
         ax3.set_xlabel('Number of Selected Variables')
         ax3.set_ylabel('Threshold')
@@ -531,12 +529,10 @@ class Gaufs:
 
         # Plot 4: Importance (continuous line) and Delta Importance (red crosses)
         ax4 = axes[1, 1]
-        x4 = list(self.dicc_num_var_selected_importance.keys())
-        y4 = list(self.dicc_num_var_selected_importance.values())
+        x4,y4 = zip(*sorted(self.dicc_num_var_selected_importance.items()))
         ax4.plot(x4, y4, marker='o', label="Selected Variables' Importance", color='navy')
 
-        x5 = list(self.dictionary_deltas_importance_diferences_with_exponential_decay.keys())
-        y5 = list(self.dictionary_deltas_importance_diferences_with_exponential_decay.values())
+        x5,y5= zip(*sorted(self.dictionary_deltas_importance_diferences_with_exponential_decay.items()))
         ax4.scatter(x5, y5, marker='x', s=50, color='red', label='Delta Importance with Exp Decay')
 
         x_argmax=sum(self.optimal_variable_selection_and_num_of_clusters[0])
@@ -598,6 +594,7 @@ class Gaufs:
         except Exception as e:
             warnings.warn(f"Couldn't create a 3D plot for Variables vs Clusters vs Fitness. Error: {str(e)}", UserWarning)
 
+
     def get_plot_comparing_solution_with_another_metric(self, new_metric, true_number_of_labels=None, output_path=None):
         """
         Generates two side-by-side plots comparing:
@@ -610,19 +607,22 @@ class Gaufs:
             output_path (str or None): Path to save the generated plot. If None, saves to the default location self.output_directory/comparison_fitness_vs_external_metric.png.
         """
         # Extract data
-        num_vars, fitness_values = zip(*sorted(self.dicc_num_var_selected_fitness.items()))
+        num_vars = sorted(self.dicc_num_var_selection_with_that_num_variables.keys())
         x_argmax=sum(self.optimal_variable_selection_and_num_of_clusters[0])
 
         # Calculate external metric for each selection
+        fitness_values = []
         external_metrics = []
 
         fitnesses_with_true_labels = []
         external_metrics_with_true_labels = []
 
+        #missing values of fake slections will not be calculated as they are not real selections
         for i in num_vars:
             selection = self.dicc_num_var_selection_with_that_num_variables[i]
             n_clusters = self.dicc_num_var_selected_num_clusters[i]
             
+            fitness_values.append(self.dicc_num_var_selected_fitness[i])
             metric_value = evaluate_ind(unlabeled_data=self.unlabeled_data, cluster_number=n_clusters, variables=selection, clustering_method=self.clustering_method, evaluation_metric=new_metric)
             external_metrics.append(metric_value)
 
@@ -638,7 +638,8 @@ class Gaufs:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
         
         # Left plot: Variables vs Fitness
-        ax1.plot(num_vars, fitness_values, marker='o', linewidth=2, markersize=8,color="tab:blue",label='Fitness for each selection with its estimated number of clusters')
+        # plot with discontinuities
+        plot_discontinuous(ax1, num_vars, fitness_values, marker='o', linewidth=2, markersize=8, color="tab:blue", label='Fitness for each selection with its estimated number of clusters')
         ax1.set_xlabel('Number of Variables', fontsize=12)
         ax1.set_ylabel('Fitness', fontsize=12)
         ax1.set_title('Used Fitness in GAUFS', fontsize=14)
@@ -648,7 +649,8 @@ class Gaufs:
         ax1.legend()
 
         # Right plot: Variables vs External Metric
-        ax2.plot(num_vars, external_metrics, marker='s', linewidth=2, markersize=8, color='tab:blue',label='Metric for each selection with its estimated number of clusters')
+        # plot with discontinuities
+        plot_discontinuous(ax2, num_vars, external_metrics, marker='s', linewidth=2, markersize=8, color='tab:blue', label='Metric for each selection with its estimated number of clusters')
         ax2.set_xlabel('Number of Variables', fontsize=12)
         ax2.set_ylabel('Metric', fontsize=12)
         ax2.set_title('New Given Metric for Comparison', fontsize=14)
@@ -660,8 +662,9 @@ class Gaufs:
         # Add baseline scores for true number of labels
         if true_number_of_labels is not None:
             #Fitness for each selection with True Labels and Metric for each selection with True Labels
-            ax1.plot(num_vars, fitnesses_with_true_labels, marker='o', linestyle='--', color='red', label='Fitness for each selection with True Number of Labels')
-            ax2.plot(num_vars, external_metrics_with_true_labels, marker='s', linestyle='--', color='red', label='Metric for each selection with True Number of Labels')
+            # plot with discontinuities
+            plot_discontinuous(ax1, num_vars, fitnesses_with_true_labels, marker='o', linestyle='--', color='red', label='Fitness for each selection with True Number of Labels')
+            plot_discontinuous(ax2, num_vars, external_metrics_with_true_labels, marker='s', linestyle='--', color='red', label='Metric for each selection with True Number of Labels')
             ax1.legend()
             ax2.legend()
 
@@ -676,5 +679,5 @@ class Gaufs:
             print(f"Comparison plot saved to: {output_path}")
             
         return output_path
-            
-            
+                
+                

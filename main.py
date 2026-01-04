@@ -2,7 +2,7 @@ from src.gaufs import *
 from src.utils import *
 
 def main():
-    unlabeled_data, true_labels = read_labeled_data_csv("./datasets/iris_labeled.csv")
+    unlabeled_data, true_labels = read_labeled_data_csv("./datasets/data_corners_6clusters_1.csv")
     gaufs= Gaufs(seed=0, num_genetic_executions=3)
     gaufs.set_unlabeled_data(unlabeled_data)
     gaufs.run()
