@@ -638,7 +638,7 @@ class Gaufs:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
         
         # Left plot: Variables vs Fitness
-        ax1.plot(num_vars, fitness_values, marker='o', linewidth=2, markersize=8,color="tab:blue",label='Fitness for each selection with the estimated number of clusters')
+        ax1.plot(num_vars, fitness_values, marker='o', linewidth=2, markersize=8,color="tab:blue",label='Fitness for each selection with its estimated number of clusters')
         ax1.set_xlabel('Number of Variables', fontsize=12)
         ax1.set_ylabel('Fitness', fontsize=12)
         ax1.set_title('Used Fitness in GAUFS', fontsize=14)
@@ -648,7 +648,7 @@ class Gaufs:
         ax1.legend()
 
         # Right plot: Variables vs External Metric
-        ax2.plot(num_vars, external_metrics, marker='s', linewidth=2, markersize=8, color='tab:blue',label='Metric for each selection with the estimated number of clusters')
+        ax2.plot(num_vars, external_metrics, marker='s', linewidth=2, markersize=8, color='tab:blue',label='Metric for each selection with its estimated number of clusters')
         ax2.set_xlabel('Number of Variables', fontsize=12)
         ax2.set_ylabel('Metric', fontsize=12)
         ax2.set_title('New Given Metric for Comparison', fontsize=14)
