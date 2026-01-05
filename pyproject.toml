@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gaufs"
+version = "0.1.0"
+description = "Genetic Algorithm for Unsupervised Feature Selection"
+authors = [
+    { name="Salvador de la Torre Gonzalez", email="delatorregonzalezsalvador@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "scikit-learn",
+    "deap"
+]

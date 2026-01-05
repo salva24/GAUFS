@@ -1,6 +1,6 @@
 out/
 datasets/
-
+!tests/test_main.py
 *.csv
 env-cluster-searcher/
 bibliografia/
@@ -9,7 +9,6 @@ results/
 outputs/
 documentacion/
 #testeo
-tests/
 pruebas.ipynb
 pruebas2.ipynb
 grafica_pruebas_3.ipynb
