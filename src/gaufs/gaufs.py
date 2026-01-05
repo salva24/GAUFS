@@ -259,7 +259,7 @@ class Gaufs:
             # Number of features/variables in the dataset
             self._num_vars = None
         else:
-            self.set_unlabeled_data(_unlabeled_data, recompute_default_parameters=True)
+            self.set_unlabeled_data(unlabeled_data, recompute_default_parameters=True)
 
         # If hof_size is provided it has preference over hof_alpha_beta
         if hof_size is not None:
