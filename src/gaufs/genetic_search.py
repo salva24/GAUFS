@@ -403,7 +403,7 @@ class GeneticSearch:
         plt.legend()
         plt.grid(True)
         plt.savefig(
-            self.path_store_plot + "evolution_of_the_genetic_algorithm.png",
+            os.path.join(self.path_store_plot, "fitness_evolution.png"),
             dpi=300,
             bbox_inches="tight",
         )

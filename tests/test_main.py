@@ -13,8 +13,9 @@ def main():
     unlabeled_data, true_labels = read_labeled_data_csv(
         "./datasets/data_corners_6clusters_1.csv"
     )
-    gaufs = Gaufs(seed=0, num_genetic_executions=3)
+    gaufs = Gaufs(seed=0, num_genetic_executions=1)
     gaufs.set_unlabeled_data(unlabeled_data)
+    gaufs.ngen=3
     gaufs.run()
     # Comparison with external metric
     gaufs.get_plot_comparing_solution_with_another_metric(

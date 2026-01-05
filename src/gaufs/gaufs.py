@@ -42,7 +42,7 @@ class Gaufs:
     def __init__(
         self,
         seed=random.randint(0, 10000),
-        _unlabeled_data=None,
+        unlabeled_data=None,
         num_genetic_executions=1,
         ngen=150,
         npop=1500,
@@ -253,7 +253,7 @@ class Gaufs:
             self.output_directory += os.sep
 
         # Input dataset and derived properties
-        if _unlabeled_data is None:
+        if unlabeled_data is None:
             # Empty DataFrame when no data provided
             self._unlabeled_data = pd.DataFrame()
             # Number of features/variables in the dataset
@@ -642,7 +642,7 @@ class Gaufs:
             )
             print(
                 "Fitness of optimal variable selection and number of clusters: ",
-                self._optimal_variable_selection_and_num_of_clusters,
+                self._fitness_of_optimal_variable_selection_and_num_of_clusters,
             )
 
         if self.generate_files_with_results:
@@ -842,7 +842,7 @@ class Gaufs:
 
             possible_variable_selections.append(selection)
             dict_clusters_fit = _get_dictionary_num_clusters_fitness(
-                _unlabeled_data=self._unlabeled_data,
+                unlabeled_data=self._unlabeled_data,
                 variable_selection=selection,
                 clustering_method=self.clustering_method,
                 evaluation_metric=self.evaluation_metric,
@@ -888,9 +888,12 @@ class Gaufs:
                 possible_variable_selections[0],
                 list(self._dict_selection_num_clusters.values())[0],
             )
+            self._fitness_of_optimal_variable_selection_and_num_of_clusters = list(
+                self._dict_selection_fitness.values()
+            )[0]
             return (
                 self._optimal_variable_selection_and_num_of_clusters,
-                self._optimal_variable_selection_and_num_of_clusters,
+                self._fitness_of_optimal_variable_selection_and_num_of_clusters,
             )
 
         # This only affects the graphs. We make up solutions for the missing number of variables so that the graphs are continuous but these solutions
@@ -983,27 +986,22 @@ class Gaufs:
             self._optimal_variable_selection_and_num_of_clusters = [
                 1
             ] * self._num_vars, self._dict_num_var_selected_num_clusters[self._num_vars]
-            self._optimal_variable_selection_and_num_of_clusters = (
-                self._dict_num_var_selected_fitness[self._num_vars]
-            )
+            self._fitness_of_optimal_variable_selection_and_num_of_clusters = self._dict_num_var_selected_fitness[self._num_vars]
             return (
                 self._optimal_variable_selection_and_num_of_clusters,
-                self._optimal_variable_selection_and_num_of_clusters,
+                self._fitness_of_optimal_variable_selection_and_num_of_clusters,
             )
 
         self._optimal_variable_selection_and_num_of_clusters = (
             self._dict_num_var_selection_with_that_num_variables[optimal_num_variables],
             self._dict_num_var_selected_num_clusters[optimal_num_variables],
         )
-        self._optimal_variable_selection_and_num_of_clusters = (
-            self._dict_num_var_selected_fitness[optimal_num_variables]
-        )
+        self._fitness_of_optimal_variable_selection_and_num_of_clusters = self._dict_num_var_selected_fitness[optimal_num_variables]
         return (
             self._optimal_variable_selection_and_num_of_clusters,
-            self._optimal_variable_selection_and_num_of_clusters,
+            self._fitness_of_optimal_variable_selection_and_num_of_clusters,
         )
 
-    @staticmethod
     def plot_dictionaries(self):
         """
         This method creates and saves plots for the following dictionaries:
@@ -1102,7 +1100,6 @@ class Gaufs:
         if self.verbose:
             print(f"Analysis by number of variables plot saved to {output_path}")
 
-    @staticmethod
     def plot_num_variables_and_clusters_3D(self):
         """
         Creates a 3D plot showing the relationship between number of variables,
@@ -1159,7 +1156,6 @@ class Gaufs:
                 UserWarning,
             )
 
-    @staticmethod
     def get_plot_comparing_solution_with_another_metric(
         self, new_metric, true_number_of_labels=None, output_path=None
     ):
@@ -1179,7 +1175,7 @@ class Gaufs:
             )
 
         # Extract data
-        _num_vars = sorted(self._dict_num_var_selection_with_that_num_variables.keys())
+        num_vars = sorted(self._dict_num_var_selection_with_that_num_variables.keys())
         x_argmax = sum(self._optimal_variable_selection_and_num_of_clusters[0])
 
         # Calculate external metric for each selection
@@ -1190,13 +1186,13 @@ class Gaufs:
         external_metrics_with_true_labels = []
 
         # missing values of fake slections will not be calculated as they are not real selections
-        for i in _num_vars:
+        for i in num_vars:
             selection = self._dict_num_var_selection_with_that_num_variables[i]
             n_clusters = self._dict_num_var_selected_num_clusters[i]
 
             fitness_values.append(self._dict_num_var_selected_fitness[i])
             metric_value = _evaluate_ind(
-                _unlabeled_data=self._unlabeled_data,
+                unlabeled_data=self._unlabeled_data,
                 cluster_number=n_clusters,
                 variables=selection,
                 clustering_method=self.clustering_method,
@@ -1207,7 +1203,7 @@ class Gaufs:
             # If true number of labels is provided, calculate metrics for that as well
             if true_number_of_labels is not None:
                 fitness_true_labels = _evaluate_ind(
-                    _unlabeled_data=self._unlabeled_data,
+                    unlabeled_data=self._unlabeled_data,
                     cluster_number=true_number_of_labels,
                     variables=selection,
                     clustering_method=self.clustering_method,
@@ -1216,7 +1212,7 @@ class Gaufs:
                 fitnesses_with_true_labels.append(fitness_true_labels)
 
                 metric_true_labels = _evaluate_ind(
-                    _unlabeled_data=self._unlabeled_data,
+                    unlabeled_data=self._unlabeled_data,
                     cluster_number=true_number_of_labels,
                     variables=selection,
                     clustering_method=self.clustering_method,
@@ -1231,7 +1227,7 @@ class Gaufs:
         # plot with discontinuities
         _plot_discontinuous(
             ax1,
-            _num_vars,
+            num_vars,
             fitness_values,
             marker="o",
             linewidth=2,
@@ -1256,7 +1252,7 @@ class Gaufs:
         # plot with discontinuities
         _plot_discontinuous(
             ax2,
-            _num_vars,
+            num_vars,
             external_metrics,
             marker="s",
             linewidth=2,
@@ -1272,7 +1268,7 @@ class Gaufs:
             x=x_argmax,
             color="black",
             linestyle="--",
-            label=f"Automatic solution with {x_argmax} variables achieving a metric of: {external_metrics[_num_vars.index(x_argmax)]:.3f}",
+            label=f"Automatic solution with {x_argmax} variables achieving a metric of: {external_metrics[num_vars.index(x_argmax)]:.3f}",
         )
         ax2.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
         ax2.legend()
@@ -1283,7 +1279,7 @@ class Gaufs:
             # plot with discontinuities
             _plot_discontinuous(
                 ax1,
-                _num_vars,
+                num_vars,
                 fitnesses_with_true_labels,
                 marker="o",
                 linestyle="--",
@@ -1292,7 +1288,7 @@ class Gaufs:
             )
             _plot_discontinuous(
                 ax2,
-                _num_vars,
+                num_vars,
                 external_metrics_with_true_labels,
                 marker="s",
                 linestyle="--",
