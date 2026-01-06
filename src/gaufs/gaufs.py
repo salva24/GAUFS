@@ -986,7 +986,9 @@ class Gaufs:
             self._optimal_variable_selection_and_num_of_clusters = [
                 1
             ] * self._num_vars, self._dict_num_var_selected_num_clusters[self._num_vars]
-            self._fitness_of_optimal_variable_selection_and_num_of_clusters = self._dict_num_var_selected_fitness[self._num_vars]
+            self._fitness_of_optimal_variable_selection_and_num_of_clusters = (
+                self._dict_num_var_selected_fitness[self._num_vars]
+            )
             return (
                 self._optimal_variable_selection_and_num_of_clusters,
                 self._fitness_of_optimal_variable_selection_and_num_of_clusters,
@@ -996,7 +998,9 @@ class Gaufs:
             self._dict_num_var_selection_with_that_num_variables[optimal_num_variables],
             self._dict_num_var_selected_num_clusters[optimal_num_variables],
         )
-        self._fitness_of_optimal_variable_selection_and_num_of_clusters = self._dict_num_var_selected_fitness[optimal_num_variables]
+        self._fitness_of_optimal_variable_selection_and_num_of_clusters = (
+            self._dict_num_var_selected_fitness[optimal_num_variables]
+        )
         return (
             self._optimal_variable_selection_and_num_of_clusters,
             self._fitness_of_optimal_variable_selection_and_num_of_clusters,
