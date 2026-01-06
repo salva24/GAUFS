@@ -1,3 +1,27 @@
+# MINERVA AI-Lab
+# Institute of Computer Engineering
+# University of Seville, Spain
+#
+# Copyright 2026 Salvador de la Torre Gonzalez
+# Antonio Bello Castro,
+# José M. Núñez Portero
+#
+# Developed and currently maintained by:
+#    Salvador de la Torre Gonzalez
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#     SPDX-License-Identifier: Apache-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Internal utilities for GAUFS.
 
@@ -22,10 +46,19 @@ import shutil
 def read_unlabeled_data_csv(filepath):
     """
     Reads unlabeled data from a CSV file.
-    Accepts CSVs with or without header.
-    Expected shape: (n_samples, n_features)
-    Returns:
-        pd.DataFrame: DataFrame containing the unlabeled data.
+
+    Accepts CSVs with or without a header.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the CSV file.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the unlabeled data of shape (n_samples, n_features).
+
     """
     # Try reading with header
     df = pd.read_csv(filepath)
@@ -43,13 +76,24 @@ def read_unlabeled_data_csv(filepath):
 
 def read_labeled_data_csv(filepath):
     """
-    Accepts CSV with or without header.
-    The fotmat of the labeled data CSV is:
+    Reads labeled data from a CSV file.
+
+    Accepts CSVs with or without a header. The format of the labeled data CSV is:
     - First n-1 columns: features
     - Last column: true labels
-    Returns:
-    - unlabeled_data: pd.DataFrame of shape (n_samples, n_features)
-    - true_labels: np.array of shape (n_samples,)
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the CSV file.
+
+    Returns
+    -------
+    unlabeled_data : pd.DataFrame
+        DataFrame of shape (n_samples, n_features) containing the features.
+    true_labels : np.ndarray
+        Array of shape (n_samples,) containing the true labels.
+
     """
     df = pd.read_csv(filepath)
 

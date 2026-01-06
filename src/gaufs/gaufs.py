@@ -1,5 +1,29 @@
+# MINERVA AI-Lab
+# Institute of Computer Engineering
+# University of Seville, Spain
+#
+# Copyright 2026 Salvador de la Torre Gonzalez
+# Antonio Bello Castro,
+# José M. Núñez Portero
+#
+# Developed and currently maintained by:
+#    Salvador de la Torre Gonzalez
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#     SPDX-License-Identifier: Apache-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-GAUFS: Main class for Genetic Algorithm for Unsupervised Feature Selection.
+GAUFS: Main class for Genetic Algorithm for Unsupervised Feature Selection for Clustering.
 
 This module provides the main interface to run GAUFS, combining feature
 selection via genetic algorithms with clustering experiments and evaluation
@@ -39,6 +63,78 @@ from .utils import (
 
 
 class Gaufs:
+    """
+    Genetic Algorithm for Unsupervised Feature Selection for Clustering.
+
+    GAUFS combines genetic algorithms with clustering experiments to perform unsupervised
+    feature selection. It identifies the most relevant features for clustering by evolving
+    feature subsets and evaluating their clustering quality across different numbers of clusters.
+
+    The algorithm operates in two main phases:
+
+    1. Genetic Search Phase (run_genetic_searches): Runs multiple independent genetic algorithm 
+    executions to discover high-quality feature subsets and compute variable significance scores.
+
+    2. Variable Weight Analysis Phase (analyze_variable_weights): Analyzes results from all 
+    genetic searches using importance metrics with exponential decay to automatically select 
+    the optimal feature subset and number of clusters.
+
+    The complete workflow can be executed with run(), which chains both phases and generates 
+    comprehensive output files including plots, CSV files, and JSON dictionaries.
+
+    Examples
+    --------
+    Basic usage with default parameters::
+
+        import pandas as pd
+        from gaufs import Gaufs
+        data = pd.read_csv('unlabeled_data.csv')
+        gaufs = Gaufs(unlabeled_data=data, seed=42)
+        optimal_solution, fitness = gaufs.run()
+        print(f"Selected {sum(optimal_solution[0])} features")
+        print(f"Optimal clusters: {optimal_solution[1]}")
+
+    Custom configuration::
+
+        gaufs = Gaufs(
+            unlabeled_data=data,
+            num_genetic_executions=5,
+            ngen=200,
+            npop=2000,
+            cluster_number_search_band=(3, 15),
+            output_directory='./my_results/'
+        )
+        optimal_solution, fitness = gaufs.run()
+
+    Step-by-step execution::
+
+        gaufs = Gaufs(unlabeled_data=data)
+        variable_significance = gaufs.run_genetic_searches()
+        optimal_solution, fitness = gaufs.analyze_variable_weights()
+        gaufs.plot_dictionaries()
+
+    See Also
+    --------
+    run : Execute the complete GAUFS workflow
+    run_genetic_searches : Run only the genetic search phase
+    analyze_variable_weights : Run only the analysis phase
+    plot_dictionaries : Generate analysis plots
+    get_plot_comparing_solution_with_another_metric : Compare results with external metrics
+
+    Notes
+    -----
+    Configuration attributes (seed, ngen, npop, etc.) are public and can be modified 
+    directly after initialization.
+    
+    Data and results attributes are private and accessed via read-only properties 
+    (unlabeled_data, optimal_solution, etc.).
+    
+    Analysis dictionaries remain None or empty until the algorithm is executed.
+    
+    Parameters ngen, npop, hof_size, and max_number_selections_for_ponderation are 
+    automatically adjusted based on the number of features if not explicitly provided.
+
+    """
     def __init__(
         self,
         seed=random.randint(0, 10000),
@@ -65,7 +161,7 @@ class Gaufs:
         output_directory=None,
     ):
         """
-        Initialize the GAUFS (Genetic Algorithm for Unsupervised Feature Selection) instance.
+        Initialize the GAUFS (Genetic Algorithm for Unsupervised Feature Selection for Clustering) instance.
 
         Args:
             seed (int): Random seed for reproducibility. Default: Random integer between 0 and 10000.
@@ -115,60 +211,65 @@ class Gaufs:
 
         Attributes:
             Configuration Attributes (Public - User Modifiable):
-                seed (int): Random seed for reproducibility.
-                num_genetic_executions (int): Number of independent GA executions.
-                ngen (int): Maximum number of generations.
-                npop (int): Population size.
-                cxpb (float): Crossover probability.
-                cxpb_rest_of_genes (float): Crossover probability for rest of genes.
-                mutpb (float): Mutation probability.
-                convergence_generations (int): Generations without improvement before stopping.
-                hof_size (int): Hall of Fame size.
-                hof_alpha_beta (tuple): Parameters for automatic HOF size calculation.
-                clustering_method: Clustering algorithm instance.
-                evaluation_metric: Evaluation metric instance.
-                cluster_number_search_band (tuple): Range of cluster numbers to test.
-                fitness_weight_over_threshold (float): Weight for fitness vs. threshold.
-                exponential_decay_factor (float): Decay factor for solution selection.
-                max_number_selections_for_ponderation (int): Max solutions for weight calculation.
-                verbose (bool): Whether to print execution logs.
-                generate_genetics_log_files (bool): Whether to generate GA log files.
-                graph_evolution (bool): Whether to generate evolution graphs.
-                generate_files_with_results (bool): Whether to generate output files.
-                output_directory (str): Directory for generated files.
-
+            
+            seed (int): Random seed for reproducibility.
+            num_genetic_executions (int): Number of independent GA executions.
+            ngen (int): Maximum number of generations.
+            npop (int): Population size.
+            cxpb (float): Crossover probability.
+            cxpb_rest_of_genes (float): Crossover probability for rest of genes.
+            mutpb (float): Mutation probability.
+            convergence_generations (int): Generations without improvement before stopping.
+            hof_size (int): Hall of Fame size.
+            hof_alpha_beta (tuple): Parameters for automatic HOF size calculation.
+            clustering_method: Clustering algorithm instance.
+            evaluation_metric: Evaluation metric instance.
+            cluster_number_search_band (tuple): Range of cluster numbers to test.
+            fitness_weight_over_threshold (float): Weight for fitness vs. threshold.
+            exponential_decay_factor (float): Decay factor for solution selection.
+            max_number_selections_for_ponderation (int): Max solutions for weight calculation.
+            verbose (bool): Whether to print execution logs.
+            generate_genetics_log_files (bool): Whether to generate GA log files.
+            graph_evolution (bool): Whether to generate evolution graphs.
+            generate_files_with_results (bool): Whether to generate output files.
+            output_directory (str): Directory for generated files.
+            
             Data Properties (Read-Only via @property):
-                unlabeled_data: Input dataset without labels (returns copy).
-                num_vars: Number of features/variables in the dataset.
-
+            
+            unlabeled_data: Input dataset without labels (returns copy).
+            num_vars: Number of features/variables in the dataset.
+            
             Results Properties (Read-Only via @property, populated after running):
-                variable_significances: Variable significances for each GA execution.
-                variable_significance: Final averaged variable significance.
-                best_chromosomes: Best chromosome from each GA execution.
-                ga_instances: Each GA instance that has been run.
-                optimal_solution: Optimal variable selection and number of clusters.
-                    Format: (variable_selection, num_clusters).
-                optimal_fitness: Fitness value of the optimal solution.
-
+            
+            variable_significances: Variable significances for each GA execution.
+            variable_significance: Final averaged variable significance.
+            best_chromosomes: Best chromosome from each GA execution.
+            ga_instances: Each GA instance that has been run.
+            optimal_solution: Optimal variable selection and number of clusters.
+                Format: (variable_selection, num_clusters).
+            optimal_fitness: Fitness value of the optimal solution.
+            
             Analysis Dictionary Properties (Read-Only via @property):
-                dict_selection_num_clusters: Maps variable_selection -> optimal_num_clusters.
-                dict_selection_fitness: Maps variable_selection -> best_fitness.
-                dict_num_var_selection_with_that_num_variables: Maps num_variables -> variable_selection.
-                dict_num_var_selected_num_clusters: Maps num_variables -> optimal_num_clusters.
-                dict_num_var_selected_fitness: Maps num_variables -> best_fitness.
-                dict_num_var_threshold: Maps num_variables -> significance_threshold.
-                dict_num_var_selected_fitness_min_max_normalized: MinMax normalized fitness.
-                dict_num_var_threshold_min_max_normalized: MinMax normalized threshold.
-                dict_num_var_selected_importance: Weighted average importance.
-                dictionary_deltas_importance_diferences: Importance differences δ.
-                dictionary_deltas_importance_diferences_with_exponential_decay: δ with decay.
-                dict_num_var_all_clusters_fitness: All fitness values for 3D plotting.
+            
+            dict_selection_num_clusters: Maps variable_selection -> optimal_num_clusters.
+            dict_selection_fitness: Maps variable_selection -> best_fitness.
+            dict_num_var_selection_with_that_num_variables: Maps num_variables -> variable_selection.
+            dict_num_var_selected_num_clusters: Maps num_variables -> optimal_num_clusters.
+            dict_num_var_selected_fitness: Maps num_variables -> best_fitness.
+            dict_num_var_threshold: Maps num_variables -> significance_threshold.
+            dict_num_var_selected_fitness_min_max_normalized: MinMax normalized fitness.
+            dict_num_var_threshold_min_max_normalized: MinMax normalized threshold.
+            dict_num_var_selected_importance: Weighted average importance.
+            dictionary_deltas_importance_diferences: Importance differences δ.
+            dictionary_deltas_importance_diferences_with_exponential_decay: δ with decay.
+            dict_num_var_all_clusters_fitness: All fitness values for 3D plotting.
 
         Note:
-            - Configuration attributes are public and can be modified directly.
-            - Data and results attributes are private (prefixed with _) and accessed via read-only properties.
-            - Most analysis dictionaries are None or empty until run_genetic_searches() and
-              analyze_variable_weights() are called, or run() which executes both in sequence.
+            Configuration attributes are public and can be modified directly.
+            Data and results attributes are private (prefixed with _) and accessed via read-only properties.
+            Most analysis dictionaries are None or empty until run_genetic_searches() and
+            analyze_variable_weights() are called, or run() which executes both in sequence.
+            
         """
         # Random seed for reproducibility (randomly generated integer between 0 and 10000)
         self.seed = seed
@@ -617,9 +718,8 @@ class Gaufs:
         """
         Runs the GAUFS algorithm to perform unsupervised feature selection.
         Returns:
-            tuple: A tuple containing:
-                - optimal_variable_selection_and_num_of_clusters (list, int): The optimal variable selection as a binary list and the optimal number of clusters.
-                - fitness_of_optimal_variable_selection_and_num_of_clusters (float): The fitness value associated with the optimal variable selection and number of clusters.
+        - optimal_variable_selection_and_num_of_clusters (list, int): The optimal variable selection as a binary list and the optimal number of clusters.
+        - fitness_of_optimal_variable_selection_and_num_of_clusters (float): The fitness value associated with the optimal variable selection and number of clusters.
         """
 
         if self._unlabeled_data.empty:
@@ -812,13 +912,16 @@ class Gaufs:
 
     def analyze_variable_weights(self):
         """
-        Analyzes variable weights to determine the optimal variable selection and number of clusters after runnning the genetic searches with `run_genetic_searches`.
-        To run the full GAUFS algorithm use run() method instead.
+        Analyzes variable weights to determine the optimal variable selection and number of clusters after running the genetic searches with `run_genetic_searches`.
+
+        To run the full GAUFS algorithm, use the `run()` method instead.
+
         Returns:
-            tuple: A tuple containing:
-                - optimal_variable_selection_and_num_of_clusters (list, int): The optimal variable selection as a binary list and the optimal number of clusters.
-                - fitness_of_optimal_variable_selection_and_num_of_clusters (float): The fitness value associated with the optimal variable selection and number of clusters.
+        - optimal_variable_selection_and_num_of_clusters (list, int): The optimal variable selection as a binary list and the optimal number of clusters.
+        - fitness_of_optimal_variable_selection_and_num_of_clusters (float): The fitness value associated with the optimal variable selection and number of clusters.
+
         """
+
         if self._variable_significance is None:
             raise ValueError(
                 "Variable significances not computed. Please run genetic searches with `run_genetic_searches` before analyzing variable weights."
