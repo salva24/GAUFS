@@ -533,10 +533,10 @@ class BuildTest:
      
 
 
-     def grafica_vars_fijadas(self,crom_vars,fitness,linkage,max_num_considerado_clusters=20):
+     def grafica_vars_fijadas(self,crom_vars,fitness,linkage,min_num_considerado_clusters=2,max_num_considerado_clusters=26):
           dicc_clusters_fit = {}
 
-          for i in range (2,max_num_considerado_clusters):
+          for i in range (min_num_considerado_clusters,max_num_considerado_clusters):
                crom_total = [i] + crom_vars
                dicc_clusters_fit[i] = evaluate_ind(self.data_dummies,crom_total,fitness,'hierarchical',linkage)[0]
           x = list(dicc_clusters_fit.keys())

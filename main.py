@@ -29,7 +29,7 @@ def main():
         linkages=["ward"]
         for fitness in fitness_internos:
             for linkage in linkages:
-                analyse_dataset(name_file,max_num_considerado_clusters=test.rango_banda_clusters[0][1],artificiales=False,fitness=fitness,linkage=linkage, parallel_evaluation=True, dummies=dummies)
+                analyse_dataset(name_file,min_num_considerado_clusters=test.rango_banda_clusters[0][0],max_num_considerado_clusters=test.rango_banda_clusters[0][1],artificiales=False,fitness=fitness,linkage=linkage, parallel_evaluation=True, dummies=dummies)
         
 
 if __name__ == "__main__":

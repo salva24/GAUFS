@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 def cortar_ponderacion(ponderacion_variables,umbral):
     return [1 if pond>=umbral else 0 for pond in ponderacion_variables]
 
-def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_clusters=26,parallel_evaluation=False, directory=None,dummies=False, flatten=True):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
+def analyse_dataset(name,artificiales,fitness,linkage,min_num_considerado_clusters=2,max_num_considerado_clusters=26,parallel_evaluation=False, directory=None,dummies=False, flatten=True):#si flatten es true a partir del ultimo nuemero de variables ques se selecciona se assigna el valor de cuando se selecciona todas en la gáfica para que se aplane en vez de que se haga interpolación lineal. Si k es 0 no se hace decay
     test=BuildTest(name,artificiales=artificiales, parallel_evaluation=parallel_evaluation,dummies=dummies)
     num_vars_originales = test.nvars
     num_clusters = test.num_clusters
@@ -17,7 +17,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
     
     if(len(umbrales)==1):#there is only one selecction possible, selceting all variables
         corte=cortar_ponderacion(ponderacion_variables,umbrales[0])
-        dicc_clusters_fit=test.grafica_vars_fijadas(crom_vars=corte,fitness=fitness,linkage=linkage,max_num_considerado_clusters=max_num_considerado_clusters)
+        dicc_clusters_fit=test.grafica_vars_fijadas(crom_vars=corte,fitness=fitness,linkage=linkage,min_num_considerado_clusters=min_num_considerado_clusters,max_num_considerado_clusters=max_num_considerado_clusters)
         clusters_para_maximo=None
         maximo_fitness=None
         for key in dicc_clusters_fit.keys():
@@ -54,7 +54,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
 
         #para cada corte
         posibles_selecciones_variables.append(corte)
-        dicc_clusters_fit=test.grafica_vars_fijadas(crom_vars=corte,fitness=fitness,linkage=linkage,max_num_considerado_clusters=max_num_considerado_clusters)
+        dicc_clusters_fit=test.grafica_vars_fijadas(crom_vars=corte,fitness=fitness,linkage=linkage,min_num_considerado_clusters=min_num_considerado_clusters,max_num_considerado_clusters=max_num_considerado_clusters)
 
         """ Lo quito por si acaso 
         #Modificacion 24/01 Post Reunion. Genero una grafica con el fitness_por_corte dado para CADA CORTE
@@ -110,7 +110,7 @@ def analyse_dataset(name,artificiales,fitness,linkage,max_num_considerado_cluste
             key_var_orig_seleccionadas = sum(corte)
 
     x_aux = list(dicc_num_var_seleccionadas_num_clusters.keys()) #num_vars
-    y_aux = list(range(2,max_num_considerado_clusters)) #num_clusters
+    y_aux = list(range(min_num_considerado_clusters,max_num_considerado_clusters)) #num_clusters
 
 
     ############################################### Parte 3D
