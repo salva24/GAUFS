@@ -19,7 +19,7 @@ def main():
         name_file = file.removesuffix(".csv")
         print(F'Ejecutando el archivo {name_file}')
         dummies=False
-        test = BuildTest(name_file,artificiales = False, parallel_evaluation=True, dummies=dummies, estimate_num_clusters_beforehand=True)
+        test = BuildTest(name_file,artificiales = False, parallel_evaluation=True, dummies=dummies, estimate_num_clusters_beforehand=False)
         
         #comentar estas dos lineas para solo sacar graficas
         test.run()
