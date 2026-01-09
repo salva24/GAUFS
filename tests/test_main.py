@@ -43,7 +43,7 @@ def main():
     #     true_number_of_labels=len(set(true_labels)),
     # )
 
-    data=DataGenerator.generate_data_balls(num_useful_features=1, num_clusters=5, num_samples_per_cluster=10, num_dummy_unif=1, num_dummy_beta=0, alpha_param=2,beta_param=3, probability_normal_radius=0.5,max_radius=0.14, deviation_from_max_radius=0.075, inverse_deviation=1.4, output_path="./data.csv", seed=0)
+    data=DataGenerator.generate_data_corners(num_useful_features=2, num_samples_per_cluster=1000, num_dummy_unif=0, num_dummy_beta=0, alpha_param=2,beta_param=3, probability_normal_radius=0,max_radius=0.05, deviation_from_max_radius=None, inverse_deviation=1.4, output_path="./data.csv", seed=0)
 
     #Plot the data in 2D
     import matplotlib.pyplot as plt

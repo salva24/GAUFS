@@ -79,20 +79,123 @@ class DataGenerator:
         num_centers=num_clusters
 
         #divide the interval [0,1] into num_centers sub-intervals and calculate their centers
-        divs_centros = DataGenerator._centers_division_interval(num_centers)
+        divs_centers = DataGenerator._centers_division_interval(num_centers)
         centers = set()
 
         #To avoid overlapping centers
         while (len(centers)< num_centers):
-            centers.add(tuple([random.choice(divs_centros) for _ in range(num_useful_features)]))
+            centers.add(tuple([random.choice(divs_centers) for _ in range(num_useful_features)]))
         list_centers = list(centers)
 
-        num_dummies = num_dummy_unif+num_dummy_beta
+        return DataGenerator._generate_clusters_given_centers(list_centers=list_centers, num_useful_features=num_useful_features, num_samples_per_cluster=num_samples_per_cluster, num_dummy_unif=num_dummy_unif, num_dummy_beta=num_dummy_beta, alpha_param=alpha_param,beta_param=beta_param, probability_normal_radius=probability_normal_radius,max_radius=max_radius, deviation_from_max_radius=deviation_from_max_radius, inverse_deviation=inverse_deviation, output_path=output_path, seed=seed)
+
+    @staticmethod
+    def generate_data_corners(num_useful_features, num_samples_per_cluster, num_divisions_per_dimension=3, num_dummy_unif=0, num_dummy_beta=0, alpha_param=2,beta_param=3, probability_normal_radius=0.5,max_radius=0.14, deviation_from_max_radius=0.075, inverse_deviation=1.4, output_path=None, seed=None):
+        """
+        Synthetic data generator that creates a dataset Corners for clustering as described in the GAUFS paper.It generates clustes whose centers form a simplex in the feature space.
+        Parameters
+        ----------
+        num_useful_features : int
+            Number of significant features. The number of clusters generated will be num_useful_features + 1.
+        num_samples_per_cluster : int
+            Number of samples per cluster.
+        num_divisions_per_dimension : int, optional
+            Number of divisions in the interval [0,1] for each dimension to determine cluster centers. Default is 3.
+        num_dummy_unif : int, optional
+            Number of dummy features following a uniform distribution. Default is 0.
+        num_dummy_beta : int, optional
+            Number of dummy features following a beta distribution. Default is 0.
+        alpha_param : float, optional
+            Alpha parameter for the beta distribution if num_dummy_beta>0. Default is 2.
+        beta_param : float, optional
+            Beta parameter for the beta distribution if num_dummy_beta>0. Default is 3.
+        probability_normal_radius : float, optional
+            Probability that the distance of each point from the center follows a normal distribution. It will follow an Uniform distribution with probability 1-probability_normal_radius. Default is 0.5.
+        max_radius : float, optional
+            Maximum radius for data point generation. Default is 0.14.
+        deviation_from_max_radius : float, optional
+            Deviation from max_radius to determine the boundary radius for each cluster. If None, no deviation is applied. Default is 0.075.
+        inverse_deviation : float, optional
+            Inverse of the standard deviation for the truncated normal distribution used to generate the radius. The standard deviation is defined as max_radius / inverse_deviation. Smaller values result in noisier clusters, with points farther from the center and increased overlap between clusters. The default value is 1.4 (which leaves around 10% of the points further away from the cluster boundary).  Default is 1.4.
+        output_path : str, optional
+            Path to save the generated dataset as a CSV file. If None, the dataset is not saved. Default is None.
+        seed : int, optional
+            Seed for random number generation. If None, a random seed is used. Default is None.
+        Returns
+        -------
+        pandas.DataFrame
+            Generated dataset as a DataFrame with var-0, var-1, ..., var-n columns and a 'label' column for true cluster labels.
+        
+        """
+        if seed is None:
+            seed = random.randint(0, 10000)
+
+        # Divide the interval [0,1] into division_interval sub-intervals and calculate their centers
+        divs_centers = DataGenerator._centers_division_interval(num_divisions_per_dimension)
+        interval_length = divs_centers[1]-divs_centers[0]
+
+        #We generate n+1 centers in n dimensions to form a simplex  
+        # We get the first center which is the origin of the simplex ("Corner")
+        # Round to avoid floating point issues
+        initial_center = [round(divs_centers[0],5) for _ in range(num_useful_features)]
+        centers = [initial_center]
+        # for n dimensions, we need n+1 centers and the vectors between them must be orthogonal to avoid clusters not overlapping when projecting
+        for i in range(num_useful_features):
+            new_center=initial_center.copy()
+            new_center[i]+=interval_length
+            centers.append(new_center)
+
+        return DataGenerator._generate_clusters_given_centers(list_centers=centers, num_useful_features=num_useful_features, num_samples_per_cluster=num_samples_per_cluster, num_dummy_unif=num_dummy_unif, num_dummy_beta=num_dummy_beta, alpha_param=alpha_param,beta_param=beta_param, probability_normal_radius=probability_normal_radius,max_radius=max_radius, deviation_from_max_radius=deviation_from_max_radius, inverse_deviation=inverse_deviation, output_path=output_path, seed=seed)
+            
+    @staticmethod
+    def _generate_clusters_given_centers(list_centers, num_useful_features, num_samples_per_cluster, num_dummy_unif, num_dummy_beta, alpha_param,beta_param, probability_normal_radius,max_radius, deviation_from_max_radius, inverse_deviation, output_path, seed):
+        """
+        Generates clusters centered around specified centers with given parameters.
+        Parameters
+        ----------
+        list_centers : list of list of float
+            List of center points for the data clusters.
+        num_useful_features : int
+            Number of significant features.
+        num_samples_per_cluster : int
+            Number of samples per cluster.
+        num_dummy_unif : int
+            Number of dummy features following a uniform distribution.
+        num_dummy_beta : int
+            Number of dummy features following a beta distribution.
+        alpha_param : float
+            Alpha parameter for the beta distribution if num_dummy_beta>0.
+        beta_param : float
+            Beta parameter for the beta distribution if num_dummy_beta>0.
+        probability_normal_radius : float
+            Probability that the distance of each point from the center follows a normal distribution. It will follow an Uniform distribution with probability 1-probability_normal_radius.
+        max_radius : float
+            Maximum radius for data point generation.
+        deviation_from_max_radius : float
+            Deviation from max_radius to determine the boundary radius for each cluster. If None, no deviation is applied.
+        inverse_deviation : float, optional
+            Inverse of the standard deviation for the truncated normal distribution used to generate the radius. The standard deviation is defined as max_radius / inverse_deviation. Smaller values result in noisier clusters, with points farther from the center and increased overlap between clusters. The default value is 1.4 (which leaves around 10% of the points further away from the cluster boundary).  Default is 1.4.
+        output_path : str or None
+            Path to save the generated dataset as a CSV file. If None, the dataset is not saved.
+        seed : int, optional
+            Seed for random number generation. If None, a random seed is used. Default is None.
+        Returns
+        -------
+        pandas.DataFrame
+            Generated dataset as a DataFrame with var-0, var-1, ..., var-n columns and a 'label' column for true cluster labels.
+            
+        """
+        # Fix seeds
+        random.seed(seed)
+        np.random.seed(seed)
+
+        num_dummies = num_dummy_unif + num_dummy_beta
+        num_centers=len(list_centers)
         data = pd.DataFrame(columns=[f'var-{i}' for i in range(0, num_useful_features+num_dummies)] + ['label'])
         dfs = []
         #for each center, generate data points to form a cluster
         seeds = random.sample(range(0, 10000), num_centers)
-        for i in range(num_clusters):
+        for i in range(num_centers):
             #whether the distance of each point from the center follows a normal distribution or a uniform distribution
             # If the radius follows an uniform distribution, set inverse_deviation_aux to None
             inverse_deviation_aux = None
@@ -105,7 +208,7 @@ class DataGenerator:
             if (deviation_from_max_radius!=None):
                 boundary_radius = random.uniform(max_radius - deviation_from_max_radius, max_radius + deviation_from_max_radius)
 
-            df_aux = DataGenerator._create_data_center(seed=seeds[i],center=list_centers[i], num_instances=num_samples_per_cluster, num_dims_sig=num_useful_features, num_dummies_unif=num_dummy_unif, num_dummies_beta=num_dummy_beta, limit_radius=boundary_radius, alpha_param=alpha_param, beta_param=beta_param, radius_inverse_deviation=inverse_deviation_aux)
+            df_aux = DataGenerator._generate_cluster_centered(seed=seeds[i],center=list_centers[i], num_instances=num_samples_per_cluster, num_dims_sig=num_useful_features, num_dummies_unif=num_dummy_unif, num_dummies_beta=num_dummy_beta, limit_radius=boundary_radius, alpha_param=alpha_param, beta_param=beta_param, radius_inverse_deviation=inverse_deviation_aux)
             
             # The true label is the index of the center in the list of centers
             df_aux['label'] = i
@@ -118,13 +221,7 @@ class DataGenerator:
         
         return data
 
-    @staticmethod
-    def generate_data_corners(num_useful_features, num_dummy_variables, num_samples, output_path=None, seed=None):
-        if seed is None:
-            seed = random.randint(0, 10000)
-        # Placeholder for data generation logic
-        return f"Generating corners data with seed {seed}, {num_useful_features} features, {num_samples} samples"
-    
+
     @staticmethod
     def _centers_division_interval(division_interval = 3):
         """
@@ -142,7 +239,7 @@ class DataGenerator:
         return list(map(lambda i:(div[i+1]+div[i])/2,list(range(division_interval))))
 
     @staticmethod
-    def _create_data_center(seed,center, num_instances, num_dims_sig, num_dummies_unif, num_dummies_beta, limit_radius, alpha_param, beta_param, radius_inverse_deviation=None):
+    def _generate_cluster_centered(seed,center, num_instances, num_dims_sig, num_dummies_unif, num_dummies_beta, limit_radius, alpha_param, beta_param, radius_inverse_deviation=None):
         """
         Creates a dataset centered around a given center with specified parameters.
         Parameters
