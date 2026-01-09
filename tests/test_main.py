@@ -26,21 +26,35 @@
 from gaufs import Gaufs
 from gaufs import read_labeled_data_csv
 from gaufs.evaluation_metrics import AdjustedMutualInformationScore
+from gaufs import DataGenerator
 
 
 def main():
-    unlabeled_data, true_labels = read_labeled_data_csv(
-        "./datasets/data_corners_6clusters_1.csv"
-    )
-    gaufs = Gaufs(seed=0)
-    gaufs.set_unlabeled_data(unlabeled_data)
-    gaufs.ngen=5
-    gaufs.run()
-    # Comparison with external metric
-    gaufs.get_plot_comparing_solution_with_another_metric(
-        AdjustedMutualInformationScore(true_labels=true_labels),
-        true_number_of_labels=len(set(true_labels)),
-    )
+    # unlabeled_data, true_labels = read_labeled_data_csv(
+    #     "./datasets/data_corners_6clusters_1.csv"
+    # )
+    # gaufs = Gaufs(seed=0)
+    # gaufs.set_unlabeled_data(unlabeled_data)
+    # gaufs.ngen=5
+    # gaufs.run()
+    # # Comparison with external metric
+    # gaufs.get_plot_comparing_solution_with_another_metric(
+    #     AdjustedMutualInformationScore(true_labels=true_labels),
+    #     true_number_of_labels=len(set(true_labels)),
+    # )
+
+    data=DataGenerator.generate_data_balls(num_useful_features=1, num_clusters=5, num_samples_per_cluster=10, num_dummy_unif=1, num_dummy_beta=0, alpha_param=2,beta_param=3, probability_normal_radius=0.5,max_radius=0.14, deviation_from_max_radius=0.075, inverse_deviation=1.4, output_path="./data.csv", seed=0)
+
+    #Plot the data in 2D
+    import matplotlib.pyplot as plt
+    # Plot
+    plt.figure()
+    plt.scatter(data["var-0"], data["var-1"], c=data["label"])
+    plt.xlabel("var-0")
+    plt.ylabel("var-1")
+    plt.title("Generated data")
+    plt.show()
+    
 
 
 if __name__ == "__main__":

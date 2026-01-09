@@ -137,7 +137,7 @@ class Gaufs:
     """
     def __init__(
         self,
-        seed=random.randint(0, 10000),
+        seed=None,
         unlabeled_data=None,
         num_genetic_executions=1,
         ngen=150,
@@ -164,7 +164,7 @@ class Gaufs:
         Initialize the GAUFS (Genetic Algorithm for Unsupervised Feature Selection for Clustering) instance.
 
         Args:
-            seed (int): Random seed for reproducibility. Default: Random integer between 0 and 10000.
+            seed (int): Random seed for reproducibility. Default: None for a random integer between 0 and 10000.
             unlabeled_data (pd.DataFrame or None): The input dataset without labels. If None, creates empty DataFrame.
             num_genetic_executions (int): Number of times to run the genetic algorithm. Default: 1. Range: >= 1.
             ngen (int): Number of generations for the genetic algorithm.
@@ -272,7 +272,7 @@ class Gaufs:
             
         """
         # Random seed for reproducibility (randomly generated integer between 0 and 10000)
-        self.seed = seed
+        self.seed = seed if seed is not None else random.randint(0, 10000)
         random.seed(self.seed)
 
         # Number of independent genetic algorithm executions to perform
