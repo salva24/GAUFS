@@ -22,39 +22,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from gaufs import DataGenerator
 from gaufs import Gaufs
 from gaufs import read_labeled_data_csv
 from gaufs.evaluation_metrics import AdjustedMutualInformationScore
-from gaufs import DataGenerator
-
 
 def main():
-    # unlabeled_data, true_labels = read_labeled_data_csv(
-    #     "./datasets/data_corners_6clusters_1.csv"
-    # )
-    # gaufs = Gaufs(seed=0)
-    # gaufs.set_unlabeled_data(unlabeled_data)
-    # gaufs.ngen=5
-    # gaufs.run()
-    # # Comparison with external metric
-    # gaufs.get_plot_comparing_solution_with_another_metric(
-    #     AdjustedMutualInformationScore(true_labels=true_labels),
-    #     true_number_of_labels=len(set(true_labels)),
-    # )
+    seed = 0
+    # Generate data with corners distribution and save it to a CSV file
+    data_with_labels = DataGenerator.generate_data_corners(
+        num_useful_features=2,
+        num_samples_per_cluster=10,
+        num_dummy_unif=1,
+        num_dummy_beta=1,
+        alpha_param=2,
+        beta_param=3,
+        output_path="./datasets/corners_3clusters.csv",
+        seed=seed,
+    )
 
-    data=DataGenerator.generate_data_corners(num_useful_features=2, num_samples_per_cluster=1000, num_dummy_unif=0, num_dummy_beta=0, alpha_param=2,beta_param=3, probability_normal_radius=0,max_radius=0.05, deviation_from_max_radius=None, inverse_deviation=1.4, output_path="./data.csv", seed=0)
+    # Read the data
+    unlabeled_data, true_labels = read_labeled_data_csv(
+        "./datasets/corners_3clusters.csv"
+    )
 
-    #Plot the data in 2D
-    import matplotlib.pyplot as plt
-    # Plot
-    plt.figure()
-    plt.scatter(data["var-0"], data["var-1"], c=data["label"])
-    plt.xlabel("var-0")
-    plt.ylabel("var-1")
-    plt.title("Generated data")
-    plt.show()
-    
+    # Instantiate GAUFS
+    gaufs = Gaufs(seed=seed)
+    # Set the unlabeled data
+    gaufs.set_unlabeled_data(unlabeled_data)
+    # We recomend to leave ngen and npop with the default values but for quick testing we change them
+    gaufs.ngen = 2
+    gaufs.npop = 250
+    # Run GAUFS
+    gaufs.run()
+
+    # Comparison with external metric
+    gaufs.get_plot_comparing_solution_with_another_metric(
+        AdjustedMutualInformationScore(true_labels=true_labels),
+        true_number_of_labels=len(set(true_labels)),
+    )
 
 
 if __name__ == "__main__":

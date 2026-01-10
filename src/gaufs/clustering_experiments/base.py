@@ -57,7 +57,7 @@ class ClusteringExperiment:
     def __init__(self):
         """
         Initialize a new ClusteringExperiment instance.
-        
+
         Sets all attributes to None, including unlabeled_data, algorithm instance,
         and assigned_clusters results.
 
@@ -71,7 +71,7 @@ class ClusteringExperiment:
     def set_unlabeled_data(self, unlabeled_data):
         """
         Set the unlabeled data for clustering.
-        
+
         Parameters
         ----------
         unlabeled_data : pandas.DataFrame or pandas.Series
@@ -92,7 +92,7 @@ class ClusteringExperiment:
         -----
         This method assumes that both unlabeled_data and algorithm have been
         properly set. The cluster labels are stored in :attr:`assigned_clusters`.
-        
+
         See Also
         --------
         assigned_clusters : The attribute where cluster labels are stored
@@ -104,7 +104,7 @@ class ClusteringExperiment:
     def get_dist_samples(self):
         """
         Get the distribution of samples across clusters.
-        
+
         Returns
         -------
         pandas.DataFrame
@@ -112,7 +112,7 @@ class ClusteringExperiment:
             - First column: absolute count of samples in each cluster
             - 'relative': percentage of samples in each cluster
             The DataFrame is sorted by cluster label index.
-        
+
         Notes
         -----
         This method should be called after run() has been executed to ensure
@@ -128,12 +128,12 @@ class ClusteringExperiment:
     def get_data_with_clusters(self):
         """
         Get the unlabeled data with assigned cluster labels.
-        
+
         Returns
         -------
         pandas.DataFrame
             Copy of unlabeled data with added 'cluster' column.
-        
+
         Raises
         ------
         ValueError

@@ -38,15 +38,15 @@ from .base import ClusteringExperiment
 class HierarchicalExperiment(ClusteringExperiment):
     """
     Hierarchical clustering experiment using Agglomerative Clustering.
-    
+
     Parameters
     ----------
     unlabeled_data : pandas.DataFrame or pandas.Series, optional
         The unlabeled dataset to be clustered. If provided, a copy is stored.
     linkage : str, default='ward'
-        Linkage criterion for hierarchical clustering. Options: 'ward', 
+        Linkage criterion for hierarchical clustering. Options: 'ward',
         'complete', 'average', 'single'.
-    
+
     Attributes
     ----------
     n_clusters : int or None
@@ -58,7 +58,7 @@ class HierarchicalExperiment(ClusteringExperiment):
     def __init__(self, unlabeled_data=None, linkage="ward"):
         """
         Initialize a HierarchicalExperiment instance.
-        
+
         Parameters
         ----------
         unlabeled_data : pandas.DataFrame or pandas.Series, optional
@@ -76,7 +76,7 @@ class HierarchicalExperiment(ClusteringExperiment):
     def run(self):
         """
         Execute hierarchical clustering with AgglomerativeClustering.
-        
+
         Creates an AgglomerativeClustering instance with the specified
         number of clusters and linkage method, then runs the clustering.
 

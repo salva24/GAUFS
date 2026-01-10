@@ -38,14 +38,14 @@ from .base import ClusteringExperiment
 class KmeansExperiment(ClusteringExperiment):
     """
     K-means clustering experiment.
-    
+
     Parameters
     ----------
     unlabeled_data : pandas.DataFrame or pandas.Series, optional
         The unlabeled dataset to be clustered. If provided, a copy is stored.
     seed : int, optional
         Random state seed for reproducibility. If None, results are non-deterministic.
-    
+
     Attributes
     ----------
     n_clusters : int or None
@@ -54,10 +54,11 @@ class KmeansExperiment(ClusteringExperiment):
         Random state seed used for the KMeans algorithm.
 
     """
+
     def __init__(self, unlabeled_data=None, seed=None):
         """
         Initialize a KmeansExperiment instance.
-        
+
         Parameters
         ----------
         unlabeled_data : pandas.DataFrame or pandas.Series, optional
@@ -73,7 +74,7 @@ class KmeansExperiment(ClusteringExperiment):
     def run(self):
         """
         Execute K-means clustering.
-        
+
         Creates a KMeans instance with the specified number of clusters
         and optional random state, then runs the clustering.
 

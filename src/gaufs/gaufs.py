@@ -72,14 +72,14 @@ class Gaufs:
 
     The algorithm operates in two main phases:
 
-    1. Genetic Search Phase (run_genetic_searches): Runs multiple independent genetic algorithm 
+    1. Genetic Search Phase (run_genetic_searches): Runs multiple independent genetic algorithm
     executions to discover high-quality feature subsets and compute variable significance scores.
 
-    2. Variable Weight Analysis Phase (analyze_variable_weights): Analyzes results from all 
-    genetic searches using importance metrics with exponential decay to automatically select 
+    2. Variable Weight Analysis Phase (analyze_variable_weights): Analyzes results from all
+    genetic searches using importance metrics with exponential decay to automatically select
     the optimal feature subset and number of clusters.
 
-    The complete workflow can be executed with run(), which chains both phases and generates 
+    The complete workflow can be executed with run(), which chains both phases and generates
     comprehensive output files including plots, CSV files, and JSON dictionaries.
 
     Examples
@@ -123,18 +123,19 @@ class Gaufs:
 
     Notes
     -----
-    Configuration attributes (seed, ngen, npop, etc.) are public and can be modified 
+    Configuration attributes (seed, ngen, npop, etc.) are public and can be modified
     directly after initialization.
-    
-    Data and results attributes are private and accessed via read-only properties 
+
+    Data and results attributes are private and accessed via read-only properties
     (unlabeled_data, optimal_solution, etc.).
-    
+
     Analysis dictionaries remain None or empty until the algorithm is executed.
-    
-    Parameters ngen, npop, hof_size, and max_number_selections_for_ponderation are 
+
+    Parameters ngen, npop, hof_size, and max_number_selections_for_ponderation are
     automatically adjusted based on the number of features if not explicitly provided.
 
     """
+
     def __init__(
         self,
         seed=None,
@@ -211,7 +212,7 @@ class Gaufs:
 
         Attributes:
             Configuration Attributes (Public - User Modifiable):
-            
+
             seed (int): Random seed for reproducibility.
             num_genetic_executions (int): Number of independent GA executions.
             ngen (int): Maximum number of generations.
@@ -233,14 +234,14 @@ class Gaufs:
             graph_evolution (bool): Whether to generate evolution graphs.
             generate_files_with_results (bool): Whether to generate output files.
             output_directory (str): Directory for generated files.
-            
+
             Data Properties (Read-Only via @property):
-            
+
             unlabeled_data: Input dataset without labels (returns copy).
             num_vars: Number of features/variables in the dataset.
-            
+
             Results Properties (Read-Only via @property, populated after running):
-            
+
             variable_significances: Variable significances for each GA execution.
             variable_significance: Final averaged variable significance.
             best_chromosomes: Best chromosome from each GA execution.
@@ -248,9 +249,9 @@ class Gaufs:
             optimal_solution: Optimal variable selection and number of clusters.
                 Format: (variable_selection, num_clusters).
             optimal_fitness: Fitness value of the optimal solution.
-            
+
             Analysis Dictionary Properties (Read-Only via @property):
-            
+
             dict_selection_num_clusters: Maps variable_selection -> optimal_num_clusters.
             dict_selection_fitness: Maps variable_selection -> best_fitness.
             dict_num_var_selection_with_that_num_variables: Maps num_variables -> variable_selection.
@@ -269,7 +270,7 @@ class Gaufs:
             Data and results attributes are private (prefixed with _) and accessed via read-only properties.
             Most analysis dictionaries are None or empty until run_genetic_searches() and
             analyze_variable_weights() are called, or run() which executes both in sequence.
-            
+
         """
         # Random seed for reproducibility (randomly generated integer between 0 and 10000)
         self.seed = seed if seed is not None else random.randint(0, 10000)

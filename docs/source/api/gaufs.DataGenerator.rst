@@ -14,7 +14,8 @@
    .. autosummary::
    
       ~DataGenerator.__init__
-      ~DataGenerator.generate
+      ~DataGenerator.generate_data_balls
+      ~DataGenerator.generate_data_corners
    
    
 
