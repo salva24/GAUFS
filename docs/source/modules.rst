@@ -1,12 +1,20 @@
 Modules
 =======
 
-.. autosummary::
-   :toctree: api
+.. automodule:: gaufs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:
 
-   gaufs.Gaufs
-   gaufs.DataGenerator
-   gaufs.read_unlabeled_data_csv
-   gaufs.read_labeled_data_csv
-   gaufs.clustering_experiments
-   gaufs.evaluation_metrics
+.. automodule:: gaufs.evaluation_metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:
+
+.. automodule:: gaufs.clustering_experiments
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:

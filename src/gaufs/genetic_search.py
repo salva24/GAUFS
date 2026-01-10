@@ -28,9 +28,9 @@ Genetic Search implementation for GAUFS.
 This module contains the internal Genetic Algorithm implementation used
 by GAUFS to optimize feature selection.
 
-Note:
-- This class and its methods are for internal use only and are
-  not exposed as part of the public API.
+.. note::
+   This class and its methods are for internal use only and are
+   not exposed as part of the public API.
 """
 
 import os

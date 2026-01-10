@@ -119,15 +119,28 @@ def _evaluate_ind(
     unlabeled_data, cluster_number, variables, clustering_method, evaluation_metric
 ):
     """
-    Evaluates an individual (cluster number and feature selection) in GAUFS algorithm.
-    Args:
-        unlabeled_data (pd.DataFrame): The unlabeled data to cluster.
-        cluster_number (int): The number of clusters to form.
-        variables (list): A binary list indicating selected variables (1 for selected, 0 for not).
-        clustering_method (object): An instance of a clustering method with a 'run' method.
-        evaluation_metric (object): An instance of an evaluation metric with a 'compute' method.
-    Returns:
-        float: The evaluation score of the clustering result.
+    Evaluate an individual solution in the GAUFS algorithm.
+
+    Evaluates a specific combination of cluster number and feature selection
+    by performing clustering and computing the evaluation metric.
+
+    Parameters
+    ----------
+    unlabeled_data : pd.DataFrame
+        The unlabeled data to cluster.
+    cluster_number : int
+        The number of clusters to form.
+    variables : list
+        A binary list indicating selected variables (1 for selected, 0 for not).
+    clustering_method : ClusteringExperiment
+        An instance of a clustering method with a ``run()`` method.
+    evaluation_metric : EvaluationMetric
+        An instance of an evaluation metric with a ``compute()`` method.
+
+    Returns
+    -------
+    float
+        The evaluation score of the clustering result.
     """
     try:
         # if no variables are selected, return a very low fitness
@@ -169,16 +182,30 @@ def _compute_variable_significance(
     num_variables, hof_counter, max_number_selections_for_ponderation
 ):
     """
-    Computation of variable significance based on the Hall of Fame individuals and their evaluation scores.
-    The values between 0. and 1. are based on the score and the number of times the individual was selected in the HoF.
+    Compute variable significance from Hall of Fame individuals.
 
-    Args:
-        num_variables (int): Number of variables in the dataset.
-        hof_counter (dict): Dictionary where keys are binary tuples representing variable selections
-                            and values are tuples of (score, selection_count). Where score is the best fitness
-                            achieved for a chromosome that includes that variable selection, and selection_count
-                            is the number of times a chromosome which includes that selection entered the Hall of Fame.
-        max_number_selections_for_ponderation (int): Maximum number of individuals to consider for ponderation.
+    Calculates variable significance values between 0 and 1 based on the
+    evaluation scores and selection frequency of individuals in the Hall of Fame.
+
+    Parameters
+    ----------
+    num_variables : int
+        Number of variables in the dataset.
+    hof_counter : dict
+        Dictionary mapping variable selections to their statistics.
+        Keys are binary tuples representing variable selections.
+        Values are tuples of (score, selection_count) where:
+        
+        - score : Best fitness achieved for a chromosome with that variable selection
+        - selection_count : Number of times a chromosome with that selection entered the Hall of Fame
+        
+    max_number_selections_for_ponderation : int
+        Maximum number of top individuals to consider for weight computation.
+
+    Returns
+    -------
+    np.ndarray
+        Variable significance values between 0 and 1 for each variable.
     """
     selections = sorted(hof_counter.items(), key=lambda item: item[1][0], reverse=True)[
         :max_number_selections_for_ponderation

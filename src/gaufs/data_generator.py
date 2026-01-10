@@ -23,10 +23,13 @@
 # limitations under the License.
 
 """
-This module implements the synthetic data generators propsed in the GAUFS paper:
+Synthetic Data Generators for Clustering Evaluation
+====================================================
+
+This module implements the synthetic data generators proposed in the GAUFS paper.
 It provides configurable routines to generate clustered datasets with controlled
-geometric structure, including spherical “ball” clusters and simplex-based
-“corner” clusters. The generators allow fine-grained control over cluster
+geometric structure, including spherical "ball" clusters and simplex-based
+"corner" clusters. The generators allow fine-grained control over cluster
 separation, noise, radius distributions, and the inclusion of irrelevant
 (dummy) features following uniform or beta distributions, enabling systematic
 evaluation of clustering and feature selection algorithms.
@@ -41,6 +44,17 @@ from scipy.stats import beta
 
 
 class DataGenerator:
+    """
+    Generator for synthetic clustered datasets with configurable geometric properties.
+    
+    This class provides static methods to generate two types of synthetic datasets:
+    
+    * **DataBalls**: Clusters with centers distributed in the feature space
+    * **DataCorners**: Clusters whose centers form a simplex structure
+    
+    Both generators support the addition of irrelevant (dummy) features and
+    flexible control over cluster separation and overlap.
+    """
 
     @staticmethod
     def generate_data_balls(
@@ -59,40 +73,103 @@ class DataGenerator:
         seed=None,
     ):
         """
-        Synthetic data generator that creates a dataset DataBalls for clustering as described in the GAUFS paper.
+        Generate synthetic ball-shaped clusters for clustering evaluation.
+        
+        Creates a dataset with spherical clusters whose centers are distributed
+        across the feature space. This generator is described in the GAUFS paper
+        and is useful for evaluating clustering algorithms under controlled conditions.
+
         Parameters
         ----------
         num_useful_features : int
-            Number of significant features.
+            Number of significant features (dimensions) for clustering.
         num_clusters : int
             Number of clusters to generate.
         num_samples_per_cluster : int
-            Number of samples per cluster.
+            Number of samples (data points) per cluster.
         num_dummy_unif : int, optional
-            Number of dummy features following a uniform distribution. Default is 0.
+            Number of dummy features following a uniform distribution U(0,1).
+            Default is 0.
         num_dummy_beta : int, optional
-            Number of dummy features following a beta distribution. Default is 0.
+            Number of dummy features following a beta distribution.
+            Default is 0.
         alpha_param : float, optional
-            Alpha parameter for the beta distribution if num_dummy_beta>0. Default is 2.
+            Alpha parameter for the beta distribution (used if ``num_dummy_beta > 0``).
+            Default is 2.
         beta_param : float, optional
-            Beta parameter for the beta distribution if num_dummy_beta>0. Default is 3.
+            Beta parameter for the beta distribution (used if ``num_dummy_beta > 0``).
+            Default is 3.
         probability_normal_radius : float, optional
-            Probability that the distance of each point from the center follows a normal distribution. It will follow an Uniform distribution with probability 1-probability_normal_radius. Default is 0.5.
+            Probability that the distance of each point from its cluster center
+            follows a truncated normal distribution. With probability
+            ``1 - probability_normal_radius``, it follows a uniform distribution.
+            Default is 0.5.
         max_radius : float, optional
-            Maximum radius for data point generation. Default is 0.14.
+            Maximum radius for data point generation from cluster centers.
+            Default is 0.14.
         deviation_from_max_radius : float, optional
-            Deviation from max_radius to determine the boundary radius for each cluster. If None, no deviation is applied. Default is 0.075.
+            Deviation from ``max_radius`` to determine the boundary radius for
+            each cluster. If ``None``, no deviation is applied and all clusters
+            have the same radius. Default is 0.075.
         inverse_deviation : float, optional
-            Inverse of the standard deviation for the truncated normal distribution used to generate the radius. The standard deviation is defined as max_radius / inverse_deviation. Smaller values result in noisier clusters, with points farther from the center and increased overlap between clusters. The default value is 1.4 (which leaves around 10% of the points further away from the cluster boundary).  Default is 1.4.
+            Inverse of the standard deviation for the truncated normal distribution
+            used to generate radii. The standard deviation is defined as
+            ``max_radius / inverse_deviation``. Smaller values result in noisier
+            clusters with points farther from the center and increased overlap
+            between clusters. Default is 1.4 (leaves ~10% of points beyond the
+            cluster boundary).
         output_path : str, optional
-            Path to save the generated dataset as a CSV file. If None, the dataset is not saved. Default is None.
+            Path to save the generated dataset as a CSV file. If ``None``,
+            the dataset is not saved to disk. Default is ``None``.
         seed : int, optional
-            Seed for random number generation. If None, a random seed is used. Default is None.
+            Seed for random number generation to ensure reproducibility.
+            If ``None``, a random seed is used. Default is ``None``.
+
         Returns
         -------
         pandas.DataFrame
-            Generated dataset as a DataFrame with var-0, var-1, ..., var-n columns and a 'label' column for true cluster labels. The first num_useful_features are the significant variables.
+            Generated dataset as a DataFrame with columns:
+            
+            * ``var-0, var-1, ..., var-n``: Feature columns (first ``num_useful_features``
+              are significant, remainder are dummy features)
+            * ``label``: True cluster labels (integer from 0 to ``num_clusters - 1``)
 
+        Examples
+        --------
+        Generate a simple dataset with 3 clusters in 2D space::
+        
+            >>> df = DataGenerator.generate_data_balls(
+            ...     num_useful_features=2,
+            ...     num_clusters=3,
+            ...     num_samples_per_cluster=100,
+            ...     seed=42
+            ... )
+            >>> df.shape
+            (300, 3)  # 300 samples, 2 features + 1 label column
+        
+        Generate a dataset with irrelevant features::
+        
+            >>> df = DataGenerator.generate_data_balls(
+            ...     num_useful_features=5,
+            ...     num_clusters=4,
+            ...     num_samples_per_cluster=200,
+            ...     num_dummy_unif=10,
+            ...     num_dummy_beta=5,
+            ...     output_path='dataset.csv',
+            ...     seed=123
+            ... )
+            >>> df.shape
+            (800, 21)  # 5 useful + 10 uniform + 5 beta dummy + 1 label
+        
+        Notes
+        -----
+        The cluster centers are chosen to avoid overlaps by dividing the [0,1]
+        interval in each dimension and selecting unique combinations of these
+        division points.
+        
+        See Also
+        --------
+        generate_data_corners : Generate simplex-structured clusters
         """
 
         if seed is None:
@@ -146,40 +223,108 @@ class DataGenerator:
         seed=None,
     ):
         """
-        Synthetic data generator that creates a dataset Corners for clustering as described in the GAUFS paper.It generates clustes whose centers form a simplex in the feature space.
+        Generate synthetic corner-structured clusters forming a simplex.
+        
+        Creates a dataset where cluster centers form a simplex in the feature space.
+        This generator is described in the GAUFS paper and produces
+        ``num_useful_features + 1`` clusters whose centers are positioned at the
+        vertices of a simplex, creating a geometrically structured dataset useful
+        for testing clustering algorithms.
+
         Parameters
         ----------
         num_useful_features : int
-            Number of significant features. The number of clusters generated will be num_useful_features + 1.
+            Number of significant features (dimensions). The number of clusters
+            generated will be ``num_useful_features + 1`` to form a simplex.
         num_samples_per_cluster : int
-            Number of samples per cluster.
+            Number of samples (data points) per cluster.
         num_divisions_per_dimension : int, optional
-            Number of divisions in the interval [0,1] for each dimension to determine cluster centers. Default is 3.
+            Number of divisions in the interval [0,1] for each dimension to
+            determine the spacing between cluster centers. Default is 3.
         num_dummy_unif : int, optional
-            Number of dummy features following a uniform distribution. Default is 0.
+            Number of dummy features following a uniform distribution U(0,1).
+            Default is 0.
         num_dummy_beta : int, optional
-            Number of dummy features following a beta distribution. Default is 0.
+            Number of dummy features following a beta distribution.
+            Default is 0.
         alpha_param : float, optional
-            Alpha parameter for the beta distribution if num_dummy_beta>0. Default is 2.
+            Alpha parameter for the beta distribution (used if ``num_dummy_beta > 0``).
+            Default is 2.
         beta_param : float, optional
-            Beta parameter for the beta distribution if num_dummy_beta>0. Default is 3.
+            Beta parameter for the beta distribution (used if ``num_dummy_beta > 0``).
+            Default is 3.
         probability_normal_radius : float, optional
-            Probability that the distance of each point from the center follows a normal distribution. It will follow an Uniform distribution with probability 1-probability_normal_radius. Default is 0.5.
+            Probability that the distance of each point from its cluster center
+            follows a truncated normal distribution. With probability
+            ``1 - probability_normal_radius``, it follows a uniform distribution.
+            Default is 0.5.
         max_radius : float, optional
-            Maximum radius for data point generation. Default is 0.14.
+            Maximum radius for data point generation from cluster centers.
+            Default is 0.14.
         deviation_from_max_radius : float, optional
-            Deviation from max_radius to determine the boundary radius for each cluster. If None, no deviation is applied. Default is 0.075.
+            Deviation from ``max_radius`` to determine the boundary radius for
+            each cluster. If ``None``, no deviation is applied. Default is 0.075.
         inverse_deviation : float, optional
-            Inverse of the standard deviation for the truncated normal distribution used to generate the radius. The standard deviation is defined as max_radius / inverse_deviation. Smaller values result in noisier clusters, with points farther from the center and increased overlap between clusters. The default value is 1.4 (which leaves around 10% of the points further away from the cluster boundary).  Default is 1.4.
+            Inverse of the standard deviation for the truncated normal distribution
+            used to generate radii. The standard deviation is defined as
+            ``max_radius / inverse_deviation``. Smaller values result in noisier
+            clusters with points farther from the center and increased overlap
+            between clusters. Default is 1.4 (leaves ~10% of points beyond the
+            cluster boundary).
         output_path : str, optional
-            Path to save the generated dataset as a CSV file. If None, the dataset is not saved. Default is None.
+            Path to save the generated dataset as a CSV file. If ``None``,
+            the dataset is not saved to disk. Default is ``None``.
         seed : int, optional
-            Seed for random number generation. If None, a random seed is used. Default is None.
+            Seed for random number generation to ensure reproducibility.
+            If ``None``, a random seed is used. Default is ``None``.
+
         Returns
         -------
         pandas.DataFrame
-            Generated dataset as a DataFrame with var-0, var-1, ..., var-n columns and a 'label' column for true cluster labels. The first num_useful_features are the significant variables.
+            Generated dataset as a DataFrame with columns:
+            
+            * ``var-0, var-1, ..., var-n``: Feature columns (first ``num_useful_features``
+              are significant, remainder are dummy features)
+            * ``label``: True cluster labels (integer from 0 to ``num_useful_features`` inclusive)
 
+        Examples
+        --------
+        Generate a simplex dataset in 3D space (4 clusters)::
+        
+            >>> df = DataGenerator.generate_data_corners(
+            ...     num_useful_features=3,
+            ...     num_samples_per_cluster=150,
+            ...     seed=42
+            ... )
+            >>> df.shape
+            (600, 4)  # 4 clusters × 150 samples, 3 features + 1 label
+            >>> df['label'].nunique()
+            4  # Number of clusters is num_useful_features + 1
+        
+        Generate with dummy features::
+        
+            >>> df = DataGenerator.generate_data_corners(
+            ...     num_useful_features=5,
+            ...     num_samples_per_cluster=100,
+            ...     num_dummy_unif=5,
+            ...     num_divisions_per_dimension=4,
+            ...     output_path='corners_dataset.csv',
+            ...     seed=123
+            ... )
+            >>> df.shape
+            (600, 11)  # 6 clusters, 5 useful + 5 dummy + 1 label
+        
+        Notes
+        -----
+        The simplex structure ensures that cluster centers form orthogonal vectors
+        from a common origin point, creating well-separated clusters when projected
+        onto individual dimensions while maintaining overlap in the full feature space.
+        This geometric property makes the dataset useful for evaluating feature
+        selection and dimensionality reduction algorithms.
+        
+        See Also
+        --------
+        generate_data_balls : Generate ball-shaped clusters
         """
         if seed is None:
             seed = random.randint(0, 10000)
@@ -234,11 +379,16 @@ class DataGenerator:
         seed,
     ):
         """
-        Generates clusters centered around specified centers with given parameters.
+        Generate clusters centered around specified points.
+        
+        Internal method that creates clusters given a list of center coordinates.
+        Each cluster is generated as a spherical distribution around its center.
+
         Parameters
         ----------
         list_centers : list of list of float
-            List of center points for the data clusters.
+            List of center points for the data clusters. Each center is a list
+            of coordinates in the feature space.
         num_useful_features : int
             Number of significant features.
         num_samples_per_cluster : int
@@ -248,26 +398,32 @@ class DataGenerator:
         num_dummy_beta : int
             Number of dummy features following a beta distribution.
         alpha_param : float
-            Alpha parameter for the beta distribution if num_dummy_beta>0.
+            Alpha parameter for the beta distribution (if ``num_dummy_beta > 0``).
         beta_param : float
-            Beta parameter for the beta distribution if num_dummy_beta>0.
+            Beta parameter for the beta distribution (if ``num_dummy_beta > 0``).
         probability_normal_radius : float
-            Probability that the distance of each point from the center follows a normal distribution. It will follow an Uniform distribution with probability 1-probability_normal_radius.
+            Probability that the distance of each point from the center follows
+            a truncated normal distribution. Otherwise follows uniform distribution.
         max_radius : float
             Maximum radius for data point generation.
-        deviation_from_max_radius : float
-            Deviation from max_radius to determine the boundary radius for each cluster. If None, no deviation is applied.
-        inverse_deviation : float, optional
-            Inverse of the standard deviation for the truncated normal distribution used to generate the radius. The standard deviation is defined as max_radius / inverse_deviation. Smaller values result in noisier clusters, with points farther from the center and increased overlap between clusters. The default value is 1.4 (which leaves around 10% of the points further away from the cluster boundary).  Default is 1.4.
+        deviation_from_max_radius : float or None
+            Deviation from ``max_radius`` to determine the boundary radius for
+            each cluster. If ``None``, no deviation is applied.
+        inverse_deviation : float
+            Inverse of the standard deviation for the truncated normal distribution
+            used to generate the radius. The standard deviation is defined as
+            ``max_radius / inverse_deviation``.
         output_path : str or None
-            Path to save the generated dataset as a CSV file. If None, the dataset is not saved.
-        seed : int, optional
-            Seed for random number generation. If None, a random seed is used. Default is None.
+            Path to save the generated dataset as a CSV file. If ``None``,
+            the dataset is not saved.
+        seed : int
+            Seed for random number generation.
+
         Returns
         -------
         pandas.DataFrame
-            Generated dataset as a DataFrame with var-0, var-1, ..., var-n columns and a 'label' column for true cluster labels.
-
+            Generated dataset as a DataFrame with ``var-0, var-1, ..., var-n``
+            columns and a ``label`` column for true cluster labels.
         """
         # Fix seeds
         random.seed(seed)
@@ -325,15 +481,25 @@ class DataGenerator:
     @staticmethod
     def _centers_division_interval(division_interval=3):
         """
-        Divides the interval [0,1] into n sub-intervals and calculates their centers.
+        Divide the [0,1] interval and calculate sub-interval centers.
+        
+        Creates evenly-spaced division points in [0,1] and returns the center
+        point of each resulting sub-interval.
+
         Parameters
         ----------
         division_interval : int
             Number of divisions in the interval [0,1].
+
         Returns
         -------
         list of float
             List of center points of the sub-intervals.
+            
+        Examples
+        --------
+        >>> DataGenerator._centers_division_interval(3)
+        [0.1666..., 0.5, 0.8333...]
         """
         div = np.linspace(0, 1, division_interval + 1)
         return list(
@@ -354,34 +520,45 @@ class DataGenerator:
         radius_inverse_deviation=None,
     ):
         """
-        Creates a dataset centered around a given center with specified parameters.
+        Create a single cluster centered at a specified point.
+        
+        Generates data points in a spherical distribution around the given center.
+        Points are generated by sampling a radius and a random direction, then
+        scaling and translating to the cluster center.
+
         Parameters
         ----------
         seed : int
             Seed for random number generation.
         center : list of float
-            Center point for the data cluster.
+            Center point coordinates for the data cluster.
         num_instances : int
             Number of data points to generate.
         num_dims_sig : int
-            Number of significant dimensions.
+            Number of significant dimensions (features).
         num_dummies_unif : int
-            Number of dummy dimensions following a uniform distribution.
+            Number of dummy dimensions following a uniform U(0,1) distribution.
         num_dummies_beta : int
             Number of dummy dimensions following a beta distribution.
         limit_radius : float
-            If using an uniform distribution (radius_inverse_deviation=None) it is the maximum radius for data point generation.
-            If using a truncated normal distribution (radius_inverse_deviation!=None), the standard deviation used for the radius generation is limit_radius/radius_inverse_deviation.
+            If using uniform distribution (``radius_inverse_deviation=None``),
+            this is the maximum radius for data point generation.
+            If using truncated normal distribution (``radius_inverse_deviation != None``),
+            the standard deviation is ``limit_radius / radius_inverse_deviation``.
         alpha_param : float
             Alpha parameter for the beta distribution.
         beta_param : float
             Beta parameter for the beta distribution.
-        radius_inverse_deviation : float, optional
-            Inverse of the standard deviation for truncated normal distribution of radius. The standard deviation used for the radius generation is limit_radius/radius_inverse_deviation. If None, uniform distribution is used.
+        radius_inverse_deviation : float or None
+            Inverse of the standard deviation for truncated normal distribution
+            of radius. The standard deviation used is
+            ``limit_radius / radius_inverse_deviation``.
+            If ``None``, uniform distribution is used instead.
+
         Returns
         -------
         pandas.DataFrame
-            Generated cluster as a DataFrame with var-0, var-1, ..., var-n columns.
+            Generated cluster as a DataFrame with ``var-0, var-1, ..., var-n`` columns.
         """
         # Fix seeds
         np.random.seed(seed)
@@ -435,21 +612,33 @@ class DataGenerator:
         average, sample_size, standard_deviation, seed=None
     ):
         """
-        Generates samples from a truncated normal distribution (only positive values). It is different than applying absolute value to a normal distribution.
+        Generate samples from a truncated normal distribution (positive values only).
+        
+        Produces samples from a normal distribution truncated to non-negative values.
+        This is achieved by rejection sampling: negative samples are discarded and
+        resampled until a positive value is obtained.
+
         Parameters
         ----------
         average : float
-            Mean of the normal distribution.
+            Mean of the underlying normal distribution.
         sample_size : int
             Number of samples to generate.
         standard_deviation : float
-            Standard deviation of the normal distribution.
+            Standard deviation of the underlying normal distribution.
         seed : int, optional
-            Seed for random number generation.
+            Seed for random number generation. If ``None``, a random seed is used.
+
         Returns
         -------
         numpy.ndarray
-            Array of generated samples.
+            Array of generated non-negative samples.
+            
+        Notes
+        -----
+        This implementation differs from simply taking the absolute value of
+        normal samples, which would produce a folded normal distribution with
+        different statistical properties.
         """
         seed = seed if seed is not None else random.randint(0, 10000)
         np.random.seed(seed)

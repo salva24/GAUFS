@@ -164,113 +164,159 @@ class Gaufs:
         """
         Initialize the GAUFS (Genetic Algorithm for Unsupervised Feature Selection for Clustering) instance.
 
-        Args:
-            seed (int): Random seed for reproducibility. Default: None for a random integer between 0 and 10000.
-            unlabeled_data (pd.DataFrame or None): The input dataset without labels. If None, creates empty DataFrame.
-            num_genetic_executions (int): Number of times to run the genetic algorithm. Default: 1. Range: >= 1.
-            ngen (int): Number of generations for the genetic algorithm.
-                Default: 150 (auto: 150 if num_vars <= 100, else 300). Range: >= 1.
-            npop (int): Population size for the genetic algorithm.
-                Default: 1500 (auto: 1500 if num_vars <= 100, else 7000). Range: >= 1.
-            cxpb (float): Crossover probability for genetic operations. Default: 0.8. Range: [0.0, 1.0].
-            cxpb_rest_of_genes (float): Crossover probability for the rest of generations after initial ones.
-                Default: 0.5. Range: [0.0, 1.0].
-            mutpb (float): Mutation probability for genetic operations. Default: 0.1. Range: [0.0, 1.0].
-            convergence_generations (int): Number of generations without improvement before stopping.
-                Default: 50. Range: >= 1.
-            hof_size (int or None): Hall of Fame size as an absolute number of best solutions to retain.
-                If provided, overrides hof_alpha_beta automatic calculation.
-                Default: None (uses hof_alpha_beta formula). Range: >= 1 or None.
-            hof_alpha_beta (tuple): (alpha, beta) parameters for automatic Hall of Fame size calculation.
-                Formula: hof_size = npop * (beta - (beta - alpha) * log(2) / log(num_vars + 1))
-                - Alpha (first value): Minimum fraction of population for HOF (when num_vars is small)
-                - Beta (second value): Maximum fraction of population for HOF (when num_vars is large)
-                This adaptive formula increases HOF size as feature count increases.
-                Default: (0.1, 0.2). Range: [0.0, 1.0] for each, beta >= alpha.
-                Only used if hof_size is None.
-            clustering_method: Clustering algorithm instance. Default: HierarchicalExperiment(linkage='ward').
-                Must implement clustering interface `ClusteringExperiment`.
-            evaluation_metric: Metric for evaluating clustering quality. Default: SilhouetteScore().
-                Must implement evaluation interface `EvaluationMetric`.
-            cluster_number_search_band (tuple): Range of cluster numbers to explore as (min_inclusive, max_exclusive).
-                Default: (2, 26). Range: (>= 2, <= num_samples).
-            fitness_weight_over_threshold (float): Weight for fitness vs. threshold in variable weight analysis.
-                Default: 0.5 i.e. both values are averaged. Range: [0.0, 1.0].
-            exponential_decay_factor (float): Exponential decay factor for the automatic solution selector.
-                Formula: δ_i / (1 + (N / exp(exponential_decay_factor * i))).
-                If 0.0 there is no decay. Default: 1.0. Range: >= 0.0.
-            max_number_selections_for_ponderation (int or None): Maximum selections from Hall of Fame for
-                weight computation. Default: 2 * num_vars. Range: >= 1 or None.
-            verbose (bool): Whether to print logs during execution. Default: True.
-            generate_genetics_log_files (bool): Whether to generate a log file with Genetic Algorithm
-                execution details. Default: True.
-            graph_evolution (bool): Whether to generate a graph of the best and average fitness through
-                the Genetic Algorithm's evolution. Default: True.
-            generate_files_with_results (bool): Whether to generate files with results and plots. Default: True.
-            output_directory (str or None): Path to store generated files including the plots.
-                If None, "./out/" is used.
+        Parameters
+        ----------
+        seed : int, optional
+            Random seed for reproducibility. Default: None for a random integer between 0 and 10000.
+        unlabeled_data : pd.DataFrame or None, optional
+            The input dataset without labels. If None, creates empty DataFrame.
+        num_genetic_executions : int, optional
+            Number of times to run the genetic algorithm. Default: 1. Range: >= 1.
+        ngen : int, optional
+            Number of generations for the genetic algorithm.
+            Default: 150 (auto: 150 if num_vars <= 100, else 300). Range: >= 1.
+        npop : int, optional
+            Population size for the genetic algorithm.
+            Default: 1500 (auto: 1500 if num_vars <= 100, else 7000). Range: >= 1.
+        cxpb : float, optional
+            Crossover probability for genetic operations. Default: 0.8. Range: [0.0, 1.0].
+        cxpb_rest_of_genes : float, optional
+            Crossover probability for the rest of generations after initial ones.
+            Default: 0.5. Range: [0.0, 1.0].
+        mutpb : float, optional
+            Mutation probability for genetic operations. Default: 0.1. Range: [0.0, 1.0].
+        convergence_generations : int, optional
+            Number of generations without improvement before stopping.
+            Default: 50. Range: >= 1.
+        hof_size : int or None, optional
+            Hall of Fame size as an absolute number of best solutions to retain.
+            If provided, overrides hof_alpha_beta automatic calculation.
+            Default: None (uses hof_alpha_beta formula). Range: >= 1 or None.
+        hof_alpha_beta : tuple, optional
+            (alpha, beta) parameters for automatic Hall of Fame size calculation.
+            Formula: hof_size = npop * (beta - (beta - alpha) * log(2) / log(num_vars + 1))
+            
+            - Alpha (first value): Minimum fraction of population for HOF (when num_vars is small)
+            - Beta (second value): Maximum fraction of population for HOF (when num_vars is large)
+            
+            This adaptive formula increases HOF size as feature count increases.
+            Default: (0.1, 0.2). Range: [0.0, 1.0] for each, beta >= alpha.
+            Only used if hof_size is None.
+        clustering_method : ClusteringExperiment, optional
+            Clustering algorithm instance. Default: HierarchicalExperiment(linkage='ward').
+            Must implement clustering interface ``ClusteringExperiment``.
+        evaluation_metric : EvaluationMetric, optional
+            Metric for evaluating clustering quality. Default: SilhouetteScore().
+            Must implement evaluation interface ``EvaluationMetric``.
+        cluster_number_search_band : tuple, optional
+            Range of cluster numbers to explore as (min_inclusive, max_exclusive).
+            Default: (2, 26). Range: (>= 2, <= num_samples).
+        fitness_weight_over_threshold : float, optional
+            Weight for fitness vs. threshold in variable weight analysis.
+            Default: 0.5 i.e. both values are averaged. Range: [0.0, 1.0].
+        exponential_decay_factor : float, optional
+            Exponential decay factor for the automatic solution selector.
+            Formula: δ_i / (1 + (N / exp(exponential_decay_factor * i))).
+            If 0.0 there is no decay. Default: 1.0. Range: >= 0.0.
+        max_number_selections_for_ponderation : int or None, optional
+            Maximum selections from Hall of Fame for weight computation.
+            Default: 2 * num_vars. Range: >= 1 or None.
+        verbose : bool, optional
+            Whether to print logs during execution. Default: True.
+        generate_genetics_log_files : bool, optional
+            Whether to generate a log file with Genetic Algorithm execution details.
+            Default: True.
+        graph_evolution : bool, optional
+            Whether to generate a graph of the best and average fitness through
+            the Genetic Algorithm's evolution. Default: True.
+        generate_files_with_results : bool, optional
+            Whether to generate files with results and plots. Default: True.
+        output_directory : str or None, optional
+            Path to store generated files including the plots.
+            If None, "./out/" is used.
 
-        Attributes:
-            Configuration Attributes (Public - User Modifiable):
+        Attributes
+        ----------
+        seed : int
+            Random seed for reproducibility.
+        num_genetic_executions : int
+            Number of independent GA executions.
+        ngen : int
+            Maximum number of generations.
+        npop : int
+            Population size.
+        cxpb : float
+            Crossover probability.
+        cxpb_rest_of_genes : float
+            Crossover probability for rest of genes.
+        mutpb : float
+            Mutation probability.
+        convergence_generations : int
+            Generations without improvement before stopping.
+        hof_size : int
+            Hall of Fame size.
+        hof_alpha_beta : tuple
+            Parameters for automatic HOF size calculation.
+        clustering_method : ClusteringExperiment
+            Clustering algorithm instance.
+        evaluation_metric : EvaluationMetric
+            Evaluation metric instance.
+        cluster_number_search_band : tuple
+            Range of cluster numbers to test.
+        fitness_weight_over_threshold : float
+            Weight for fitness vs. threshold.
+        exponential_decay_factor : float
+            Decay factor for solution selection.
+        max_number_selections_for_ponderation : int
+            Max solutions for weight calculation.
+        verbose : bool
+            Whether to print execution logs.
+        generate_genetics_log_files : bool
+            Whether to generate GA log files.
+        graph_evolution : bool
+            Whether to generate evolution graphs.
+        generate_files_with_results : bool
+            Whether to generate output files.
+        output_directory : str
+            Directory for generated files.
 
-            seed (int): Random seed for reproducibility.
-            num_genetic_executions (int): Number of independent GA executions.
-            ngen (int): Maximum number of generations.
-            npop (int): Population size.
-            cxpb (float): Crossover probability.
-            cxpb_rest_of_genes (float): Crossover probability for rest of genes.
-            mutpb (float): Mutation probability.
-            convergence_generations (int): Generations without improvement before stopping.
-            hof_size (int): Hall of Fame size.
-            hof_alpha_beta (tuple): Parameters for automatic HOF size calculation.
-            clustering_method: Clustering algorithm instance.
-            evaluation_metric: Evaluation metric instance.
-            cluster_number_search_band (tuple): Range of cluster numbers to test.
-            fitness_weight_over_threshold (float): Weight for fitness vs. threshold.
-            exponential_decay_factor (float): Decay factor for solution selection.
-            max_number_selections_for_ponderation (int): Max solutions for weight calculation.
-            verbose (bool): Whether to print execution logs.
-            generate_genetics_log_files (bool): Whether to generate GA log files.
-            graph_evolution (bool): Whether to generate evolution graphs.
-            generate_files_with_results (bool): Whether to generate output files.
-            output_directory (str): Directory for generated files.
+        Notes
+        -----
+        **Configuration Attributes (Public - User Modifiable):**
+        All parameters listed above are public attributes that can be modified
+        directly after initialization.
 
-            Data Properties (Read-Only via @property):
+        **Data Properties (Read-Only via @property):**
 
-            unlabeled_data: Input dataset without labels (returns copy).
-            num_vars: Number of features/variables in the dataset.
+        * ``unlabeled_data``: Input dataset without labels (returns copy)
+        * ``num_vars``: Number of features/variables in the dataset
 
-            Results Properties (Read-Only via @property, populated after running):
+        **Results Properties (Read-Only via @property, populated after running):**
 
-            variable_significances: Variable significances for each GA execution.
-            variable_significance: Final averaged variable significance.
-            best_chromosomes: Best chromosome from each GA execution.
-            ga_instances: Each GA instance that has been run.
-            optimal_solution: Optimal variable selection and number of clusters.
-                Format: (variable_selection, num_clusters).
-            optimal_fitness: Fitness value of the optimal solution.
+        * ``variable_significances``: Variable significances for each GA execution
+        * ``variable_significance``: Final averaged variable significance
+        * ``best_chromosomes``: Best chromosome from each GA execution
+        * ``ga_instances``: Each GA instance that has been run
+        * ``optimal_solution``: Optimal variable selection and number of clusters, format: (variable_selection, num_clusters)
+        * ``optimal_fitness``: Fitness value of the optimal solution
 
-            Analysis Dictionary Properties (Read-Only via @property):
+        **Analysis Dictionary Properties (Read-Only via @property):**
 
-            dict_selection_num_clusters: Maps variable_selection -> optimal_num_clusters.
-            dict_selection_fitness: Maps variable_selection -> best_fitness.
-            dict_num_var_selection_with_that_num_variables: Maps num_variables -> variable_selection.
-            dict_num_var_selected_num_clusters: Maps num_variables -> optimal_num_clusters.
-            dict_num_var_selected_fitness: Maps num_variables -> best_fitness.
-            dict_num_var_threshold: Maps num_variables -> significance_threshold.
-            dict_num_var_selected_fitness_min_max_normalized: MinMax normalized fitness.
-            dict_num_var_threshold_min_max_normalized: MinMax normalized threshold.
-            dict_num_var_selected_importance: Weighted average importance.
-            dictionary_deltas_importance_diferences: Importance differences δ.
-            dictionary_deltas_importance_diferences_with_exponential_decay: δ with decay.
-            dict_num_var_all_clusters_fitness: All fitness values for 3D plotting.
+        * ``dict_selection_num_clusters``: Maps variable_selection -> optimal_num_clusters
+        * ``dict_selection_fitness``: Maps variable_selection -> best_fitness
+        * ``dict_num_var_selection_with_that_num_variables``: Maps num_variables -> variable_selection
+        * ``dict_num_var_selected_num_clusters``: Maps num_variables -> optimal_num_clusters
+        * ``dict_num_var_selected_fitness``: Maps num_variables -> best_fitness
+        * ``dict_num_var_threshold``: Maps num_variables -> significance_threshold
+        * ``dict_num_var_selected_fitness_min_max_normalized``: MinMax normalized fitness
+        * ``dict_num_var_threshold_min_max_normalized``: MinMax normalized threshold
+        * ``dict_num_var_selected_importance``: Weighted average importance
+        * ``dictionary_deltas_importance_diferences``: Importance differences δ
+        * ``dictionary_deltas_importance_diferences_with_exponential_decay``: δ with decay
+        * ``dict_num_var_all_clusters_fitness``: All fitness values for 3D plotting
 
-        Note:
-            Configuration attributes are public and can be modified directly.
-            Data and results attributes are private (prefixed with _) and accessed via read-only properties.
-            Most analysis dictionaries are None or empty until run_genetic_searches() and
-            analyze_variable_weights() are called, or run() which executes both in sequence.
-
+        Most analysis dictionaries are None or empty until ``run_genetic_searches()`` and
+        ``analyze_variable_weights()`` are called, or ``run()`` which executes both in sequence.
         """
         # Random seed for reproducibility (randomly generated integer between 0 and 10000)
         self.seed = seed if seed is not None else random.randint(0, 10000)
@@ -656,19 +702,25 @@ class Gaufs:
         """
         Set the random seed for reproducibility.
 
-        Args:
-            seed (int): The random seed to set.
+        Parameters
+        ----------
+        seed : int
+            The random seed to set.
         """
         self.seed = seed
         random.seed(self.seed)
 
     def set_unlabeled_data(self, _unlabeled_data, recompute_default_parameters=True):
         """
-        Sets the unlabeled data to anlyze with GAUFS.
+        Sets the unlabeled data to analyze with GAUFS.
 
-        Args:
-            _unlabeled_data (pd.DataFrame): The input dataset without labels.
-            recompute_default_parameters (bool): Whether to recompute default parameters based on the number of variables.
+        Parameters
+        ----------
+        _unlabeled_data : pd.DataFrame
+            The input dataset without labels.
+        recompute_default_parameters : bool, optional
+            Whether to recompute default parameters based on the number of variables.
+            Default is True.
         """
         self._unlabeled_data = _unlabeled_data.copy()
         self._num_vars = self._unlabeled_data.shape[1]
@@ -702,11 +754,17 @@ class Gaufs:
     def read_unlabeled_data_csv(self, filepath, recompute_default_parameters=True):
         """
         Reads unlabeled data from a CSV file.
+
         Accepts CSVs with or without header.
         Expected shape: (n_samples, n_features)
-        Args:
-            filepath (str): Path to the CSV file containing the unlabeled data.
-            recompute_default_parameters (bool): Whether to recompute default parameters based on the number of variables.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to the CSV file containing the unlabeled data.
+        recompute_default_parameters : bool, optional
+            Whether to recompute default parameters based on the number of variables.
+            Default is True.
         """
 
         df = read_unlabeled_data_csv(filepath)
@@ -717,12 +775,18 @@ class Gaufs:
 
     def run(self):
         """
-        Runs the GAUFS algorithm to perform unsupervised feature selection.
-        Returns:
-        - optimal_variable_selection_and_num_of_clusters (list, int): The optimal variable selection as a binary list and the optimal number of clusters.
-        - fitness_of_optimal_variable_selection_and_num_of_clusters (float): The fitness value associated with the optimal variable selection and number of clusters.
-        """
+        Run the complete GAUFS algorithm for unsupervised feature selection.
 
+        Executes both genetic search and variable weight analysis phases,
+        generating comprehensive output files including plots and results.
+
+        Returns
+        -------
+        optimal_variable_selection_and_num_of_clusters : tuple
+            (variable_selection, num_clusters) where variable_selection is a binary list.
+        fitness_of_optimal_variable_selection_and_num_of_clusters : float
+            Fitness value associated with the optimal solution.
+        """
         if self._unlabeled_data.empty:
             raise ValueError(
                 "Unlabeled data is not loaded. Please load the data before running the model."
@@ -828,11 +892,16 @@ class Gaufs:
         )
 
     def run_genetic_searches(self):
-        """
-        Runs multiple independent executions of the genetic algorithm to compute variable significances.
-        To run the full GAUFS algorithm use `run` method instead.
-        Returns:
-            np.ndarray: Averaged variable significances across all genetic executions.
+        """"
+        Run multiple independent genetic algorithm executions.
+
+        Computes variable significances from multiple GA runs.
+        To run the full GAUFS algorithm use ``run()`` method instead.
+
+        Returns
+        -------
+        np.ndarray
+            Averaged variable significances across all genetic executions.
         """
 
         if self.num_genetic_executions < 1:
@@ -913,14 +982,19 @@ class Gaufs:
 
     def analyze_variable_weights(self):
         """
-        Analyzes variable weights to determine the optimal variable selection and number of clusters after running the genetic searches with `run_genetic_searches`.
+        Analyze variable weights to determine optimal solution.
 
-        To run the full GAUFS algorithm, use the `run()` method instead.
+        Determines the optimal variable selection and number of clusters after
+        running genetic searches with ``run_genetic_searches()``.
 
-        Returns:
-        - optimal_variable_selection_and_num_of_clusters (list, int): The optimal variable selection as a binary list and the optimal number of clusters.
-        - fitness_of_optimal_variable_selection_and_num_of_clusters (float): The fitness value associated with the optimal variable selection and number of clusters.
+        To run the full GAUFS algorithm, use the ``run()`` method instead.
 
+        Returns
+        -------
+        optimal_variable_selection_and_num_of_clusters : tuple
+            (variable_selection, num_clusters) where variable_selection is a binary list.
+        fitness_of_optimal_variable_selection_and_num_of_clusters : float
+            Fitness value associated with the optimal solution.
         """
 
         if self._variable_significance is None:
@@ -1112,16 +1186,32 @@ class Gaufs:
 
     def plot_dictionaries(self):
         """
-        This method creates and saves plots for the following dictionaries:
-        - Number of clusters vs. number of selected variables
-        - Fitness vs. number of selected variables
-        - Threshold vs. number of selected variables
-        - Importance and Delta Importance vs. number of selected variables
-        These plots are essential for analyzing the results of the variable weight analysis and help the user make
-        a more informed selection of variables and asociated number of clusters further than relying solely on the
-        automatic selection. By choosing a solution with a high delta importance different from the one that reaches
-        the maximum fitness, the user can balance himself between the dimensionality reduction and the clustering
-        quality (as more reduction usually implies a loss of information that negatively affects external metrics).
+        Generate comparison plots between GAUFS fitness and external metric.
+
+        Creates two side-by-side plots:
+
+        - Left: Variables vs Used Fitness in GAUFS execution
+        - Right: Variables vs Provided Metric for each selection
+
+        This allows comparison between the fitness used in GAUFS and an
+        external metric of interest.
+
+        Parameters
+        ----------
+        new_metric : EvaluationMetric
+            Must implement evaluation interface.
+        true_number_of_labels : int or None, optional
+            True number of labels from the data. If specified, plots include
+            a baseline comparing the score obtained with the true number of
+            labels as number of clusters. Default is None.
+        output_path : str or None, optional
+            Path to save the generated plot. If None, saves to
+            ``self.output_directory/comparison_fitness_vs_external_metric.png``.
+
+        Returns
+        -------
+        str
+            Path where the plot was saved.
         """
         if self._dict_num_var_selection_with_that_num_variables == {}:
             raise ValueError(
@@ -1268,14 +1358,32 @@ class Gaufs:
         self, new_metric, true_number_of_labels=None, output_path=None
     ):
         """
-        Generates two side-by-side plots comparing:
-        - Left: Variables vs Used Fitness in the execution GAUFS (from _dict_num_var_selected_fitness)
-        - Right: Variables vs Provided Metric for each selection and it's associated number of clusters.
-        This allows comparison between the fitness used in GAUFS and an external metric of interest.
-        Args:
-            new_metric (function): Must implement evaluation interface.
-            true_number_of_labels (int or None): True number of labels from the data. If especified, the plots include a baseline comparing the score that would be obtained with the true number of labels as number of the clusters. Default is None.
-            output_path (str or None): Path to save the generated plot. If None, saves to the default location self.output_directory/comparison_fitness_vs_external_metric.png.
+        Generate comparison plots between GAUFS fitness and external metric.
+
+        Creates two side-by-side plots:
+
+        - Left: Variables vs Used Fitness in GAUFS execution
+        - Right: Variables vs Provided Metric for each selection
+
+        This allows comparison between the fitness used in GAUFS and an
+        external metric of interest.
+
+        Parameters
+        ----------
+        new_metric : EvaluationMetric
+            Must implement evaluation interface.
+        true_number_of_labels : int or None, optional
+            True number of labels from the data. If specified, plots include
+            a baseline comparing the score obtained with the true number of
+            labels as number of clusters. Default is None.
+        output_path : str or None, optional
+            Path to save the generated plot. If None, saves to
+            ``self.output_directory/comparison_fitness_vs_external_metric.png``.
+
+        Returns
+        -------
+        str
+            Path where the plot was saved.
         """
         if self._dict_num_var_selection_with_that_num_variables == {}:
             raise ValueError(

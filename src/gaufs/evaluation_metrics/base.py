@@ -41,21 +41,32 @@ class EvaluationMetric:
         """
         Initialize the metric with data and labels that won't change.
 
-        Args:
-            true_labels: Ground truth labels. Required only for external metrics. It can be left as None for internal metrics.
+        Parameters
+        ----------
+        true_labels : array-like or None, optional
+            Ground truth labels. Required only for external metrics.
+            Can be left as None for internal metrics. Default is None.
         """
         self.true_labels = true_labels
 
     def compute(self, assigned_clusters, unlabeled_data=None):
         """
         Compute the metric given cluster assignments.
+
         Must be implemented by each metric subclass.
 
-        Args:
-            assigned_clusters: The cluster assignments to evaluate
-            unlabeled_data: The original data (DataFrame or None). Required for internal metrics. If the metric does not need it, it can be left as None.
+        Parameters
+        ----------
+        assigned_clusters : array-like
+            The cluster assignments to evaluate.
+        unlabeled_data : pd.DataFrame or None, optional
+            The original data. Required for internal metrics.
+            If the metric does not need it, it can be left as None.
+            Default is None.
 
-        Returns:
-            float: The metric score
+        Returns
+        -------
+        float
+            The metric score.
         """
         raise NotImplementedError("Subclasses must implement compute()")
