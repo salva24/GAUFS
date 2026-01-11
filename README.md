@@ -5,6 +5,8 @@ It includes all components required to reproduce the results presented in the pa
 
 **Note:** The latest version of GAUFS, including all data generators used in the experiments, is available on the [`main` branch](https://github.com/salva24/GAUFS.git) of this repository.
 
+**Note:** A zip archive containing the results presented in the paper can be provided upon request.
+
 ---
 
 ## Usage
