@@ -1,0 +1,15 @@
+GAUFS
+
+MINERVA AI-Lab
+Institute of Computer Engineering
+University of Seville, Spain
+
+This software is associated with the following scientific work:
+GAUFS: Genetic Algorithm for Unsupervised Feature Selection for Clustering
+
+Paper authors and contributions:
+- José E. Sánchez-López: Conceptualization, Methodology, Investigation, Formal analysis, Visualization, Writing – original draft, Writing – review & editing.
+- Salvador de la Torre Gonzalez: Conceptualization, Software, Library development, Investigation, Writing – original draft, Writing – review & editing.
+- Antonio Bello-Castro: Software, Investigation, Validation, Writing – original draft, Writing – review & editing.
+- José M. Núñez-Portero: Software, Investigation, Visualization, Writing – original draft, Writing – review & editing.
+- José C. Riquelme: Conceptualization, Methodology, Supervision, Funding acquisition, Project administration, Writing – review & editing.

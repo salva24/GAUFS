@@ -1,5 +1,12 @@
 # GAUFS
 
+This repository provides the source code and experimental scripts associated with the Genetic Algorithm for Unsupervised Feature Selection (GAUFS) framework.  
+It includes all components required to reproduce the results presented in the paper, as well as the experimental setup used for comparison with alternative methods.
+
+**Note:** The latest version of GAUFS, including all data generators used in the experiments, is available on the [`main` branch](https://github.com/salva24/GAUFS.git) of this repository.
+
+---
+
 ## Usage
 
 To execute the code:
@@ -15,6 +22,8 @@ To execute the code:
     ```
 
 After execution, results will be generated in the `results/` folder. The script will automatically process all CSV files in the `datasets/` folder and generate analysis results including clustering metrics and visualizations.
+
+---
 
 ## Project Structure
 
@@ -36,4 +45,26 @@ After execution, results will be generated in the `results/` folder. The script 
   - `automate_v2.py` — Python script to run the automatic comparison process.
   - `datasets_mat.ipynb` — Jupyter notebook with tools for converting CSV files into MATLAB structures.
 
+---
+
+## Acknowledgments
+
+This work has been developed by researchers from MINERVA AI-Lab, Institute of Computer Engineering, University of Seville, Spain.
+
+This research has been funded by the Ministerio de Ciencia, Innovación y Universidades (Spain) under project PID2023-146037OB-C21, funded by MCIU/AEI/10.13039/501100011033.
+
+---
+
+## License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.  
+Additional attribution and authorship information is provided in the [NOTICE](NOTICE.txt) file.
+
+---
+## Software Authors and Contact Information
+**Author:** Salvador de la Torre Gonzalez, email: *delatorregonzalezsalvador at gmail.com*
+
+**Author:** Antonio Bello Castro
+
+**Author:** José M. Núñez Portero
 
