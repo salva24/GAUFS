@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0,<70.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gaufs"
+version = "0.5.0"
+description = "Genetic Algorithm for Unsupervised Feature Selection for Clustering"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+
+authors = [
+    { name = "Salvador de la Torre Gonzalez", email = "delatorregonzalezsalvador@gmail.com" }
+]
+
+license = { file = "LICENSE" }
+
+dependencies = [
+    "numpy>=2.4.0,<3.0.0",
+    "pandas>=2.3.3,<3.0.0",
+    "scipy>=1.16.3,<2.0.0",
+    "matplotlib>=3.10.8,<4.0.0",
+    "scikit-learn>=1.8.0,<2.0.0",
+    "deap>=1.4.3,<2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.0.0",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
