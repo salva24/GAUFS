@@ -237,8 +237,8 @@ class BuildTest:
           #      row[fit+"_corte_hof_ponderado"]=average_fitness_corte[fit]/num_rep_experi
           # return row
           #anyadimos el resultado de cada una de las tres ejecuciones para facilitar futuros analisis
-          row["TODOS_HOF_Y_CONTADORES_Y_DICCIONARIO_NUM_CLUSTERS_PARA_CADA_EJECUCION"]=lista_hof_y_contadores
-          row["ULTIMA_GNERACION_CADA_EJECUCION"]=lista_ultima_gneracion_ejecucion
+          # row["TODOS_HOF_Y_CONTADORES_Y_DICCIONARIO_NUM_CLUSTERS_PARA_CADA_EJECUCION"]=lista_hof_y_contadores
+          # row["ULTIMA_GNERACION_CADA_EJECUCION"]=lista_ultima_gneracion_ejecucion
           return row
 
      def to_csv(self):
