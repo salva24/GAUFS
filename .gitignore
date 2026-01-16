@@ -15,3 +15,7 @@ dist/
 # Tests
 tests/datasets/*.csv
 tests/out/
+
+# Demo
+tests/demo/datasets/*.csv
+tests/demo/out/
