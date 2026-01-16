@@ -2,8 +2,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/gaufs)](https://pypi.org/project/gaufs/)
 
-[![Tests](https://github.com/salva24/GAUFS/actions/workflows/tests.yml/badge.svg)](
-https://github.com/salva24/GAUFS/actions/workflows/tests.yml
+[![Tests](https://github.com/salva24/GAUFS/actions/workflows/tests-build.yml/badge.svg)](
+https://github.com/salva24/GAUFS/actions/workflows/tests-build.yml
 )
 
 
