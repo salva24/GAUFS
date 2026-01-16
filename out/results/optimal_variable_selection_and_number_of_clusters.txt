@@ -1,7 +1,0 @@
-Optimal number of clusters: 13
-Fitness: ([1, 0, 1, 1], 13)
-
-Selected Variables:
-var-0
-var-2
-var-3
