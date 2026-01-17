@@ -27,6 +27,7 @@ from gaufs import Gaufs
 from gaufs import read_labeled_data_csv
 from gaufs.evaluation_metrics import AdjustedMutualInformationScore
 
+
 def test_gaufs_runs_without_exceptions(tmp_path, monkeypatch):
     seed = 0
 
@@ -66,4 +67,3 @@ def test_gaufs_runs_without_exceptions(tmp_path, monkeypatch):
         AdjustedMutualInformationScore(true_labels=true_labels),
         true_number_of_labels=len(set(true_labels)),
     )
-

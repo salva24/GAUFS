@@ -195,10 +195,10 @@ def _compute_variable_significance(
         Dictionary mapping variable selections to their statistics.
         Keys are binary tuples representing variable selections.
         Values are tuples of (score, selection_count) where:
-        
+
         - score : Best fitness achieved for a chromosome with that variable selection
         - selection_count : Number of times a chromosome with that selection entered the Hall of Fame
-        
+
     max_number_selections_for_ponderation : int
         Maximum number of top individuals to consider for weight computation.
 

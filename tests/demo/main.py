@@ -29,15 +29,16 @@ from gaufs import Gaufs
 from gaufs import read_labeled_data_csv
 from gaufs.evaluation_metrics import AdjustedMutualInformationScore
 
+
 def main():
     seed = 0
-    
+
     # Change working directory to the script directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
     # Filepath
-    file_path=os.path.join("datasets", "corners_3clusters.csv")
+    file_path = os.path.join("datasets", "corners_3clusters.csv")
 
     # Generate data with corners distribution and save it to a CSV file
     data_with_labels = DataGenerator.generate_data_corners(
@@ -52,9 +53,7 @@ def main():
     )
 
     # Read the data
-    unlabeled_data, true_labels = read_labeled_data_csv(
-        file_path
-    )
+    unlabeled_data, true_labels = read_labeled_data_csv(file_path)
 
     # Instantiate GAUFS
     gaufs = Gaufs(seed=seed)
