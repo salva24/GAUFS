@@ -43,11 +43,11 @@ def main():
 
     # Generate data with spheres distribution and save it to a CSV file
     data_with_labels = DataGenerator.generate_data_spheres(
-        num_useful_features=4,
+        num_useful_features=2,
         num_clusters=4,
         num_samples_per_cluster=50,
-        num_dummy_unif=2,
-        num_dummy_beta=2,
+        num_dummy_unif=1,
+        num_dummy_beta=1,
         alpha_param=2,
         beta_param=3,
         output_path=file_path,
@@ -63,7 +63,7 @@ def main():
         seed=seed,
         clustering_method=KmeansExperiment(),
         evaluation_metric=AdjustedMutualInformationScore(true_labels=true_labels),
-        cluster_number_search_band=(2, 7)
+        cluster_number_search_band=(3, 6)
     )
     # Set the unlabeled data
     gaufs.set_unlabeled_data(unlabeled_data)

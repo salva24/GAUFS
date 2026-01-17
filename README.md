@@ -14,6 +14,35 @@ This library accompanies the research work presented in the paper:
 
 ---
 
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Quick Start: Basic Gaufs Usage](#quick-start-basic-gaufs-usage)
+- [How GAUFS Works](#how-gaufs-works)
+- [Main Configuration Parameters for GAUFS](#main-configuration-parameters-for-gaufs)
+- [Output Files](#output-files)
+  - [GA Execution Folders](#ga-execution-folders)
+  - [Results Folder](#results-folder)
+  - [Comparison Plots](#comparison-plots)
+- [Synthetic Data Generators](#synthetic-data-generators)
+  - [DataSpheres Generator](#dataspheres-generator)
+  - [DataCorners Generator](#datacorners-generator)
+- [Custom Fitness](#custom-fitness)
+  - [Clustering Algorithms](#clustering-algorithms)
+  - [Evaluation Metrics](#evaluation-metrics)
+- [Examples](#examples)
+  - [Demo 1: Basic Usage with Corner Distribution](#demo-1-basic-usage-with-corner-distribution-demodemo1py)
+  - [Demo 2: Advanced Configuration with Spherical Clusters](#demo-2-advanced-configuration-with-spherical-clusters-demodemo2py)
+- [Documentation](#documentation)
+- [Project Structure](#project-structure)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+- [Library Authors and Contact Information](#library-authors-and-contact-information)
+- [Support](#support)
+
+---
+
 ## Key Features
 
 - **Fully Unsupervised:** No labeled data required for feature selection
@@ -233,24 +262,43 @@ GAUFS supports both internal and external metrics for evaluating clustering qual
 
 ---
 
-### Demo Script
+## Examples
 
-The `demo/main.py` script provides a complete working example that:
+Two comprehensive demo scripts are provided to illustrate GAUFS capabilities:
 
-1. **Generates synthetic data** with the `DataCorners` generator:
-   - 4 useful features for clustering
-   - 2 uniform noise features
-   - 2 beta-distributed noise features
-   - 5 clusters (forming a simplex structure)
-   - 50 samples per cluster (250 total)
+### Demo 1: Basic Usage with Corner Distribution (`demo/demo1.py`)
 
-2. **Runs GAUFS** to identify relevant features and estimate cluster count
+This example demonstrates the standard GAUFS workflow using synthetic data with a simplex (corner) structure:
 
-3. **Compares results** with ground truth using Adjusted Mutual Information
+- **Data characteristics:**
+  - 4 useful clustering features
+  - 2 uniform noise features + 2 beta-distributed noise features
+  - 3 clusters forming a corner/simplex structure
+  - 50 samples per cluster (150 total)
 
-4. **Generates comprehensive outputs** including plots and analysis files
+- **Workflow:**
+  - Generates synthetic data using `DataGenerator.generate_data_corners()`
+  - Runs GAUFS with default settings (unsupervised mode)
+  - Compares results against ground truth using Adjusted Mutual Information
+  - Produces visualization plots and analysis outputs
 
-**To run the demo:**
+### Demo 2: Advanced Configuration with Spherical Clusters (`demo/demo2.py`)
+
+This example showcases GAUFS in a supervised scenario with custom configuration:
+
+- **Data characteristics:**
+  - 2 useful clustering features
+  - 4 clusters with spherical distribution
+  - 1 uniform noise feature + 1 beta-distributed noise feature
+  - 50 samples per cluster (200 total)
+
+- **Advanced features demonstrated:**
+  - Custom clustering method (`KmeansExperiment`)
+  - External evaluation metric (AMI with known labels)
+  - Tighter cluster search range (3–5 clusters). As explained in the paper, we recommend not reducing the cluster search range to a single value, even when the number of true labels is known.
+  - Comparison with alternative metrics (NMI)
+
+**To run the demos:**
 ```bash
 # Clone the repository
 git clone https://github.com/salva24/GAUFS.git
@@ -259,9 +307,16 @@ cd GAUFS
 # Install the package
 pip install -e .
 
-# Run the demo
-python demo/main.py
+# Run demo 1 (corners and basic usage)
+python demo/demo1.py
+
+# Run demo 2 (spheres and advanced configuration)
+python demo/demo2.py
 ```
+
+Both demos generate comprehensive outputs including plots, analysis files, and performance metrics in the `examples\out\` directory.
+
+---
 
 ## Documentation
 
