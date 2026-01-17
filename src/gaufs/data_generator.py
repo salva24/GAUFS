@@ -49,7 +49,7 @@ class DataGenerator:
 
     This class provides static methods to generate two types of synthetic datasets:
 
-    * **DataBalls**: Clusters with centers distributed in the feature space
+    * **DataSpheres**: Clusters with centers distributed in the feature space
     * **DataCorners**: Clusters whose centers form a simplex structure
 
     Both generators support the addition of irrelevant (dummy) features and
@@ -57,7 +57,7 @@ class DataGenerator:
     """
 
     @staticmethod
-    def generate_data_balls(
+    def generate_data_spheres(
         num_useful_features,
         num_clusters,
         num_samples_per_cluster,
@@ -138,7 +138,7 @@ class DataGenerator:
         --------
         Generate a simple dataset with 3 clusters in 2D space::
 
-            >>> df = DataGenerator.generate_data_balls(
+            >>> df = DataGenerator.generate_data_spheres(
             ...     num_useful_features=2,
             ...     num_clusters=3,
             ...     num_samples_per_cluster=100,
@@ -149,7 +149,7 @@ class DataGenerator:
 
         Generate a dataset with irrelevant features::
 
-            >>> df = DataGenerator.generate_data_balls(
+            >>> df = DataGenerator.generate_data_spheres(
             ...     num_useful_features=5,
             ...     num_clusters=4,
             ...     num_samples_per_cluster=200,
@@ -324,7 +324,7 @@ class DataGenerator:
 
         See Also
         --------
-        generate_data_balls : Generate ball-shaped clusters
+        generate_data_spheres : Generate ball-shaped clusters
         """
         if seed is None:
             seed = random.randint(0, 10000)

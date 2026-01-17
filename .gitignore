@@ -17,5 +17,6 @@ tests/datasets/*.csv
 tests/out/
 
 # Demo
-tests/demo/datasets/*.csv
-tests/demo/out/
+/examples/datasets/*.csv
+/examples/out/*
+!/examples/out/.gitkeep
