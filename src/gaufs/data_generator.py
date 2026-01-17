@@ -46,18 +46,18 @@ from scipy.stats import beta
 class DataGenerator:
     """
     Generator for synthetic clustered datasets with configurable geometric properties.
-    
+
     This class provides static methods to generate two types of synthetic datasets:
-    
-    * **DataBalls**: Clusters with centers distributed in the feature space
+
+    * **DataSpheres**: Clusters with centers distributed in the feature space
     * **DataCorners**: Clusters whose centers form a simplex structure
-    
+
     Both generators support the addition of irrelevant (dummy) features and
     flexible control over cluster separation and overlap.
     """
 
     @staticmethod
-    def generate_data_balls(
+    def generate_data_spheres(
         num_useful_features,
         num_clusters,
         num_samples_per_cluster,
@@ -74,7 +74,7 @@ class DataGenerator:
     ):
         """
         Generate synthetic ball-shaped clusters for clustering evaluation.
-        
+
         Creates a dataset with spherical clusters whose centers are distributed
         across the feature space. This generator is described in the GAUFS paper
         and is useful for evaluating clustering algorithms under controlled conditions.
@@ -129,7 +129,7 @@ class DataGenerator:
         -------
         pandas.DataFrame
             Generated dataset as a DataFrame with columns:
-            
+
             * ``var-0, var-1, ..., var-n``: Feature columns (first ``num_useful_features``
               are significant, remainder are dummy features)
             * ``label``: True cluster labels (integer from 0 to ``num_clusters - 1``)
@@ -137,8 +137,8 @@ class DataGenerator:
         Examples
         --------
         Generate a simple dataset with 3 clusters in 2D space::
-        
-            >>> df = DataGenerator.generate_data_balls(
+
+            >>> df = DataGenerator.generate_data_spheres(
             ...     num_useful_features=2,
             ...     num_clusters=3,
             ...     num_samples_per_cluster=100,
@@ -146,10 +146,10 @@ class DataGenerator:
             ... )
             >>> df.shape
             (300, 3)  # 300 samples, 2 features + 1 label column
-        
+
         Generate a dataset with irrelevant features::
-        
-            >>> df = DataGenerator.generate_data_balls(
+
+            >>> df = DataGenerator.generate_data_spheres(
             ...     num_useful_features=5,
             ...     num_clusters=4,
             ...     num_samples_per_cluster=200,
@@ -160,13 +160,13 @@ class DataGenerator:
             ... )
             >>> df.shape
             (800, 21)  # 5 useful + 10 uniform + 5 beta dummy + 1 label
-        
+
         Notes
         -----
         The cluster centers are chosen to avoid overlaps by dividing the [0,1]
         interval in each dimension and selecting unique combinations of these
         division points.
-        
+
         See Also
         --------
         generate_data_corners : Generate simplex-structured clusters
@@ -224,7 +224,7 @@ class DataGenerator:
     ):
         """
         Generate synthetic corner-structured clusters forming a simplex.
-        
+
         Creates a dataset where cluster centers form a simplex in the feature space.
         This generator is described in the GAUFS paper and produces
         ``num_useful_features + 1`` clusters whose centers are positioned at the
@@ -282,7 +282,7 @@ class DataGenerator:
         -------
         pandas.DataFrame
             Generated dataset as a DataFrame with columns:
-            
+
             * ``var-0, var-1, ..., var-n``: Feature columns (first ``num_useful_features``
               are significant, remainder are dummy features)
             * ``label``: True cluster labels (integer from 0 to ``num_useful_features`` inclusive)
@@ -290,7 +290,7 @@ class DataGenerator:
         Examples
         --------
         Generate a simplex dataset in 3D space (4 clusters)::
-        
+
             >>> df = DataGenerator.generate_data_corners(
             ...     num_useful_features=3,
             ...     num_samples_per_cluster=150,
@@ -300,9 +300,9 @@ class DataGenerator:
             (600, 4)  # 4 clusters × 150 samples, 3 features + 1 label
             >>> df['label'].nunique()
             4  # Number of clusters is num_useful_features + 1
-        
+
         Generate with dummy features::
-        
+
             >>> df = DataGenerator.generate_data_corners(
             ...     num_useful_features=5,
             ...     num_samples_per_cluster=100,
@@ -313,7 +313,7 @@ class DataGenerator:
             ... )
             >>> df.shape
             (600, 11)  # 6 clusters, 5 useful + 5 dummy + 1 label
-        
+
         Notes
         -----
         The simplex structure ensures that cluster centers form orthogonal vectors
@@ -321,10 +321,10 @@ class DataGenerator:
         onto individual dimensions while maintaining overlap in the full feature space.
         This geometric property makes the dataset useful for evaluating feature
         selection and dimensionality reduction algorithms.
-        
+
         See Also
         --------
-        generate_data_balls : Generate ball-shaped clusters
+        generate_data_spheres : Generate ball-shaped clusters
         """
         if seed is None:
             seed = random.randint(0, 10000)
@@ -380,7 +380,7 @@ class DataGenerator:
     ):
         """
         Generate clusters centered around specified points.
-        
+
         Internal method that creates clusters given a list of center coordinates.
         Each cluster is generated as a spherical distribution around its center.
 
@@ -482,7 +482,7 @@ class DataGenerator:
     def _centers_division_interval(division_interval=3):
         """
         Divide the [0,1] interval and calculate sub-interval centers.
-        
+
         Creates evenly-spaced division points in [0,1] and returns the center
         point of each resulting sub-interval.
 
@@ -495,7 +495,7 @@ class DataGenerator:
         -------
         list of float
             List of center points of the sub-intervals.
-            
+
         Examples
         --------
         >>> DataGenerator._centers_division_interval(3)
@@ -521,7 +521,7 @@ class DataGenerator:
     ):
         """
         Create a single cluster centered at a specified point.
-        
+
         Generates data points in a spherical distribution around the given center.
         Points are generated by sampling a radius and a random direction, then
         scaling and translating to the cluster center.
@@ -613,7 +613,7 @@ class DataGenerator:
     ):
         """
         Generate samples from a truncated normal distribution (positive values only).
-        
+
         Produces samples from a normal distribution truncated to non-negative values.
         This is achieved by rejection sampling: negative samples are discarded and
         resampled until a positive value is obtained.
@@ -633,7 +633,7 @@ class DataGenerator:
         -------
         numpy.ndarray
             Array of generated non-negative samples.
-            
+
         Notes
         -----
         This implementation differs from simply taking the absolute value of

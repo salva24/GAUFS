@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gaufs"
-version = "1.0.0"
+version = "1.1.0"
 description = "Genetic Algorithm for Unsupervised Feature Selection for Clustering"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
@@ -28,7 +28,7 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "black>=24.0.0",
-    "build>=1.0.0",
+    "build>=1.4.0",
 ]
 docs = [
     "sphinx>=7.0.0",

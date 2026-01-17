@@ -195,10 +195,10 @@ class Gaufs:
         hof_alpha_beta : tuple, optional
             (alpha, beta) parameters for automatic Hall of Fame size calculation.
             Formula: hof_size = npop * (beta - (beta - alpha) * log(2) / log(num_vars + 1))
-            
+
             - Alpha (first value): Minimum fraction of population for HOF (when num_vars is small)
             - Beta (second value): Maximum fraction of population for HOF (when num_vars is large)
-            
+
             This adaptive formula increases HOF size as feature count increases.
             Default: (0.1, 0.2). Range: [0.0, 1.0] for each, beta >= alpha.
             Only used if hof_size is None.
@@ -892,7 +892,7 @@ class Gaufs:
         )
 
     def run_genetic_searches(self):
-        """"
+        """ "
         Run multiple independent genetic algorithm executions.
 
         Computes variable significances from multiple GA runs.

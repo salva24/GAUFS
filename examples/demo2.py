@@ -27,24 +27,27 @@ import os
 from gaufs import DataGenerator
 from gaufs import Gaufs
 from gaufs import read_labeled_data_csv
-from gaufs.evaluation_metrics import AdjustedMutualInformationScore
+from gaufs.clustering_experiments import KmeansExperiment
+from gaufs.evaluation_metrics import AdjustedMutualInformationScore, NMIScore
+
 
 def main():
     seed = 0
-    
+
     # Change working directory to the script directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
     # Filepath
-    file_path=os.path.join("datasets", "corners_3clusters.csv")
+    file_path = os.path.join("datasets", "spheres_4clusters.csv")
 
-    # Generate data with corners distribution and save it to a CSV file
-    data_with_labels = DataGenerator.generate_data_corners(
-        num_useful_features=4,
+    # Generate data with spheres distribution and save it to a CSV file
+    data_with_labels = DataGenerator.generate_data_spheres(
+        num_useful_features=2,
+        num_clusters=4,
         num_samples_per_cluster=50,
-        num_dummy_unif=2,
-        num_dummy_beta=2,
+        num_dummy_unif=1,
+        num_dummy_beta=1,
         alpha_param=2,
         beta_param=3,
         output_path=file_path,
@@ -52,20 +55,24 @@ def main():
     )
 
     # Read the data
-    unlabeled_data, true_labels = read_labeled_data_csv(
-        file_path
-    )
+    unlabeled_data, true_labels = read_labeled_data_csv(file_path)
 
-    # Instantiate GAUFS
-    gaufs = Gaufs(seed=seed)
+    # In this case we asume we know the data labels and therefore we are in a supervised scenario
+    # Instantiate GAUFS using the KMeans clustering experiment, an external metric and a tighter cluster search band
+    gaufs = Gaufs(
+        seed=seed,
+        clustering_method=KmeansExperiment(),
+        evaluation_metric=AdjustedMutualInformationScore(true_labels=true_labels),
+        cluster_number_search_band=(3, 6)
+    )
     # Set the unlabeled data
     gaufs.set_unlabeled_data(unlabeled_data)
     # Run GAUFS
     gaufs.run()
 
-    # Comparison with external metric
+    # Comparison with another external metric
     gaufs.get_plot_comparing_solution_with_another_metric(
-        AdjustedMutualInformationScore(true_labels=true_labels),
+        NMIScore(true_labels=true_labels),
         true_number_of_labels=len(set(true_labels)),
     )
 

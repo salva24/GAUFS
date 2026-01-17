@@ -22,43 +22,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from gaufs import DataGenerator
 from gaufs import Gaufs
 from gaufs import read_labeled_data_csv
 from gaufs.evaluation_metrics import AdjustedMutualInformationScore
 
 
-def test_gaufs_runs_without_exceptions(tmp_path, monkeypatch):
+def main():
     seed = 0
 
-    # Change working directory to the temporary path
-    monkeypatch.chdir(tmp_path)
+    # Change working directory to the script directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
 
     # Filepath
-    file_path = tmp_path / "corners_3clusters.csv"
+    file_path = os.path.join("datasets", "corners_3clusters.csv")
 
     # Generate data with corners distribution and save it to a CSV file
-    DataGenerator.generate_data_corners(
-        num_useful_features=2,
-        num_samples_per_cluster=10,
-        num_dummy_unif=1,
-        num_dummy_beta=1,
+    data_with_labels = DataGenerator.generate_data_corners(
+        num_useful_features=4,
+        num_samples_per_cluster=50,
+        num_dummy_unif=2,
+        num_dummy_beta=2,
         alpha_param=2,
         beta_param=3,
-        output_path=str(file_path),
+        output_path=file_path,
         seed=seed,
     )
 
     # Read the data
-    unlabeled_data, true_labels = read_labeled_data_csv(str(file_path))
+    unlabeled_data, true_labels = read_labeled_data_csv(file_path)
 
     # Instantiate GAUFS
     gaufs = Gaufs(seed=seed)
     # Set the unlabeled data
     gaufs.set_unlabeled_data(unlabeled_data)
-    # We recomend to leave ngen and npop with the default values but for quick testing we change them
-    gaufs.ngen = 2
-    gaufs.npop = 250
     # Run GAUFS
     gaufs.run()
 
@@ -67,3 +67,7 @@ def test_gaufs_runs_without_exceptions(tmp_path, monkeypatch):
         AdjustedMutualInformationScore(true_labels=true_labels),
         true_number_of_labels=len(set(true_labels)),
     )
+
+
+if __name__ == "__main__":
+    main()
