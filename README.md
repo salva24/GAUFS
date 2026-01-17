@@ -1,6 +1,6 @@
 # GAUFS
 
-[![PyPI](https://img.shields.io/pypi/v/gaufs)](https://pypi.org/project/gaufs/)
+[![PyPI version](https://badge.fury.io/py/gaufs.svg)](https://badge.fury.io/py/gaufs)
 [![Tests](https://github.com/salva24/GAUFS/actions/workflows/tests-build.yml/badge.svg)](https://github.com/salva24/GAUFS/actions/workflows/tests-build.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
