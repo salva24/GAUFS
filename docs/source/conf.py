@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 
 project = "GAUFS"
 author = "Salvador de la Torre Gonzalez"
-release = "1.1.1"
+release = "1.1.2"
 
 extensions = [
     "sphinx.ext.autodoc",

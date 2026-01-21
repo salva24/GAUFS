@@ -399,7 +399,7 @@ Additional attribution and authorship information is provided in the [NOTICE](NO
 ## Library Authors and Contact Information
 
 **Author:** Salvador de la Torre Gonzalez  
-**Email:** delatorregonzalezsalvador@gmail.com
+**Email:** delatorregonzalezsalvador at gmail.com
 
 **Co-authors:**  
 - Antonio Bello Castro  
