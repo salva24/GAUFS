@@ -4,7 +4,7 @@ scoop
 deap
 matplotlib
 scipy
-scikit-learn
+scikit-learn==1.5.0
 tqdm
 dataframe_image
 hungarianalg
