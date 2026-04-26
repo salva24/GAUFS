@@ -1228,7 +1228,9 @@ class Gaufs:
         _plot_discontinuous(ax1, x1, y1, marker="o", color="black")
         ax1.set_xlabel("Number of Selected Variables")
         ax1.set_ylabel("Number of Clusters")
-        ax1.set_title(r"Number of Clusters for Each Selection $\Psi_{\text{num\_clusters}}$")
+        ax1.set_title(
+            r"Number of Clusters for Each Selection $\Psi_{\text{num\_clusters}}$"
+        )
         ax1.grid(True, alpha=0.3)
         ax1.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
         ax1.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
@@ -1257,7 +1259,11 @@ class Gaufs:
         ax4 = axes[1, 1]
         x4, y4 = zip(*sorted(self._dict_num_var_selected_importance.items()))
         ax4.plot(
-            x4, y4, marker="o", label=r"Selected Variables' Importance $\Phi_{\text{average}}$", color="navy"
+            x4,
+            y4,
+            marker="o",
+            label=r"Selected Variables' Importance $\Phi_{\text{average}}$",
+            color="navy",
         )
 
         x5, y5 = zip(
@@ -1279,7 +1285,7 @@ class Gaufs:
             x=x_argmax,
             color="black",
             linestyle="--",
-            label=rf"Automatic solution: {x_argmax} = $\hat{{i}}$ variables and fitness of: {self._dict_num_var_selected_fitness[x_argmax]:.3f}"
+            label=rf"Automatic solution: {x_argmax} = $\hat{{i}}$ variables and fitness of: {self._dict_num_var_selected_fitness[x_argmax]:.3f}",
         )
 
         ax4.set_xlabel("Number of Selected Variables")

@@ -247,7 +247,7 @@ def _clear_directory(directory_path):
 def _plot_discontinuous(ax, x_vals, y_vals, **kwargs):
     """Plot lines only between consecutive x values"""
     # Extract label from kwargs
-    label = kwargs.pop("label", None) 
+    label = kwargs.pop("label", None)
     i = 0
     while i < len(x_vals):
         # Find the end of the consecutive sequence
@@ -256,10 +256,16 @@ def _plot_discontinuous(ax, x_vals, y_vals, **kwargs):
             j += 1
 
         # Plot this consecutive segment: only the first segment carries the label
-        ax.plot(x_vals[i : j + 1], y_vals[i : j + 1], label=label if i == 0 else None, **kwargs)
+        ax.plot(
+            x_vals[i : j + 1],
+            y_vals[i : j + 1],
+            label=label if i == 0 else None,
+            **kwargs,
+        )
 
         # Move to next segment
         i = j + 1
+
 
 def _convert_to_serializable(obj):
     """

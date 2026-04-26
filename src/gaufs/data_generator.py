@@ -588,7 +588,7 @@ class DataGenerator:
             # significant dimensions
             # Generate random direction vector
             denom = 0.0
-            #avoid division by zero in case the random vector is zero
+            # avoid division by zero in case the random vector is zero
             denom = 1.0 if denom == 0.0 else denom
 
             for j in range(num_dims_sig):
