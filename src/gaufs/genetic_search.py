@@ -91,7 +91,6 @@ class GeneticSearch:
         self.num_clusters_and_its_max_fitness = dict()
         # dictionary={variable_selection:(maximum fitness found for that selection (regardeless of the cluster number), number of times a chromosome with this selection entered in the hof)}
         self.hof_counter = dict()
-        self.hof_weighted = dict()
 
         # logbook to store statistics
         self.logbook = tools.Logbook()
@@ -336,7 +335,7 @@ class GeneticSearch:
                     self.hof_counter[variables_selection] = (
                         max(old[0], ind.fitness.values[0]),
                         old[1] + 1,
-                    )  # maximo fitness y cuento las veces que ha entrado
+                    )  # max fitness and times it entered in the hof
                 else:
                     self.hof_counter[variables_selection] = (ind.fitness.values[0], 1)
 

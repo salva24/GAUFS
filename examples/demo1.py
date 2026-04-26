@@ -38,7 +38,7 @@ def main():
     os.chdir(script_dir)
 
     # Filepath
-    file_path = os.path.join("datasets", "corners_3clusters.csv")
+    file_path = os.path.join("datasets", "corners_5clusters.csv")
 
     # Generate data with corners distribution and save it to a CSV file
     data_with_labels = DataGenerator.generate_data_corners(
