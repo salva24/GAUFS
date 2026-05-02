@@ -1218,6 +1218,14 @@ class Gaufs:
                 "Variable weight analysis not performed. Please run `analyze_variable_weights` before plotting dictionaries."
             )
 
+        # check if there is only one selection possible
+        if len(self._dict_num_var_selected_fitness.keys()) == 1:
+            warnings.warn(
+                f"There is only one possible selection considered and therefore no plots comparing different selections can be generated. The only selection possible is selecting all variables and num_clusters={list(self._dict_selection_num_clusters.values())[0]} with fitness={list(self._dict_selection_fitness.values())[0]}",
+                UserWarning,
+            )
+            return
+
         fig, axes = plt.subplots(2, 2, figsize=(14, 10))
         fig.suptitle("Analysis by Number of Variables", fontsize=16)
 
