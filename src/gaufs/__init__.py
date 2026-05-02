@@ -41,3 +41,7 @@ from .data_generator import DataGenerator
 from .utils import read_unlabeled_data_csv, read_labeled_data_csv
 
 __all__ = ["Gaufs", "DataGenerator", "read_unlabeled_data_csv", "read_labeled_data_csv"]
+
+from importlib.metadata import version
+
+__version__ = version("gaufs")

@@ -20,3 +20,6 @@ tests/out/
 /examples/datasets/*.csv
 /examples/out/*
 !/examples/out/.gitkeep
+
+#vscode
+.vscode/
