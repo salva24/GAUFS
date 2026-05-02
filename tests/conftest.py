@@ -22,26 +22,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-GAUFS: Genetic Algorithm for Unsupervised Feature Selection for Clustering.
+# This conftest.py file is used to set up the testing environment for the GAUFS package.
+import matplotlib
 
-This package provides the main GAUFS interface and core public classes.
-
-The API exposes:
-- GAUFS: the main class for running the algorithm
-- DataGenerator: two synthetic data generators for clustering experiments
-- `read_unlabeled_data_csv` and `read_labeled_data_csv`: functions to load datasets from CSV files
-
-Additional functionality, such as clustering experiments and evaluation
-metrics, is available through dedicated subpackages.
-"""
-
-from .gaufs import Gaufs
-from .data_generator import DataGenerator
-from .utils import read_unlabeled_data_csv, read_labeled_data_csv
-
-__all__ = ["Gaufs", "DataGenerator", "read_unlabeled_data_csv", "read_labeled_data_csv"]
-
-from importlib.metadata import version
-
-__version__ = version("gaufs")
+# Set the matplotlib backend to "Agg" to prevent it from trying to open a window during tests, which can cause issues in headless environments.
+matplotlib.use("Agg")

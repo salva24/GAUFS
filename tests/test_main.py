@@ -29,6 +29,18 @@ from gaufs.evaluation_metrics import AdjustedMutualInformationScore
 
 
 def test_gaufs_runs_without_exceptions(tmp_path, monkeypatch):
+    """
+    Integration test for the DataGenerator, the full GAUFS pipeline and the external metric comparison plot.
+    This test verifies:
+    - The DataGenerator can create a dataset with a corners distribution and dummy variables.
+    - GAUFS pipeline completes full execution with modified parameters for quick testing (ngen=2, npop=250).
+    - An external metric comparison plot is generated without errors.
+
+    Steps:
+    1. Generate a synthetic dataset with 2 useful features, 1 uniform dummy variable, and 1 beta dummy variable.
+    2. Run the GAUFS algorithm with the generated dataset.
+    3. Compare the results with an external metric (Adjusted Mutual Information Score).
+    """
     seed = 0
 
     # Change working directory to the temporary path
