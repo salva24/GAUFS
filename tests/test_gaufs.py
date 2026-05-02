@@ -65,9 +65,6 @@ def test_analyze_variable_weights_all_weights_one(tmp_path, monkeypatch):
     # Set all variable significances to 1
     gaufs._variable_significance = np.ones(num_variables)
 
-    # Call analyze_variable_weights
-    optimal_solution, fitness = gaufs.analyze_variable_weights()
-
     # Capture the warning
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
