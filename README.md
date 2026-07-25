@@ -6,9 +6,15 @@
 
 **GAUFS** (Genetic Algorithm for Unsupervised Feature Selection) is a Python library for unsupervised feature selection designed to identify the most relevant features for clustering without requiring labeled data. It combines genetic algorithms with clustering experiments to perform dimensionality reduction while simultaneously estimating the optimal number of clusters.
 
-This library accompanies the research work presented in the paper:
+This library accompanies the research work presented in the following paper:
 
-> *GAUFS: Genetic Algorithm for Unsupervised Feature Selection for Clustering*
+> **José E. Sánchez-López, Salvador de la Torre Gonzalez, Antonio Bello-Castro, José M. Núñez-Portero, José C. Riquelme.**
+> **GAUFS: Genetic Algorithm for Unsupervised Feature Selection for Clustering.**
+> *Knowledge-Based Systems*, Volume 350, 2026, Article 116436.
+> ISSN 0950-7051.
+> https://doi.org/10.1016/j.knosys.2026.116436
+
+If you use GAUFS in your research, please cite this paper.
 
 **Note:** To reproduce the results presented in the paper and the experimental setup used for comparison with alternative methods, please use the [paper-reproducibility branch](https://github.com/salva24/GAUFS/tree/paper-reproducibility) of this repository.
 
