@@ -5,7 +5,13 @@ Institute of Computer Engineering
 University of Seville, Spain
 
 This software is associated with the following scientific work:
-GAUFS: Genetic Algorithm for Unsupervised Feature Selection for Clustering
+
+José E. Sánchez-López, Salvador de la Torre Gonzalez, Antonio Bello-Castro, José M. Núñez-Portero, José C. Riquelme.
+GAUFS: Genetic Algorithm for Unsupervised Feature Selection for Clustering.
+Knowledge-Based Systems, Volume 350, 2026, Article 116436.
+ISSN 0950-7051.
+https://doi.org/10.1016/j.knosys.2026.116436
+If you use GAUFS in your research, please cite the paper above.
 
 GAUFS authors and contributions:
 - Salvador de la Torre Gonzalez: Conceptualization, Original Software, Refactorization & Library development, Investigation, Writing – original draft, Writing – review & editing.
